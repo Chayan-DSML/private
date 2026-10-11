@@ -29,6 +29,7 @@ import {
   Newspaper,
   ExternalLink,
 } from "lucide-react";
+import { postForm, postJson } from "./api";
 
 type Page =
   | "home"
@@ -202,6 +203,16 @@ export default function App() {
   const [wishlistSubmitted, setWishlistSubmitted] = useState(false);
   const [wishlistIdea, setWishlistIdea] = useState("");
   const [cookieDismissed, setCookieDismissed] = useState(false);
+  const [waitlistError, setWaitlistError] = useState("");
+  const [waitlistPending, setWaitlistPending] = useState(false);
+  const [contactError, setContactError] = useState("");
+  const [contactPending, setContactPending] = useState(false);
+  const [applicationError, setApplicationError] = useState("");
+  const [applicationPending, setApplicationPending] = useState(false);
+  const [partnerError, setPartnerError] = useState("");
+  const [partnerPending, setPartnerPending] = useState(false);
+  const [ideaError, setIdeaError] = useState("");
+  const [ideaPending, setIdeaPending] = useState(false);
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -239,19 +250,92 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  const handleWaitlistSubmit = (e: React.FormEvent) => {
+  const handleWaitlistSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setWaitlistSubmitted(true);
+    const email = String(new FormData(e.currentTarget).get("email") || "");
+    setWaitlistError("");
+    setWaitlistPending(true);
+    try {
+      await postJson("/api/waitlist", { email });
+      setWaitlistSubmitted(true);
+    } catch (err) {
+      setWaitlistError(err instanceof Error ? err.message : "Could not join the waitlist");
+    } finally {
+      setWaitlistPending(false);
+    }
   };
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setContactSubmitted(true);
+    const data = new FormData(e.currentTarget);
+    setContactError("");
+    setContactPending(true);
+    try {
+      await postJson("/api/contact", {
+        name: String(data.get("name") || ""),
+        email: String(data.get("email") || ""),
+        message: String(data.get("message") || ""),
+      });
+      setContactSubmitted(true);
+    } catch (err) {
+      setContactError(err instanceof Error ? err.message : "Could not send the message");
+    } finally {
+      setContactPending(false);
+    }
   };
 
-  const handleApplicationSubmit = (e: React.FormEvent) => {
+  const handleApplicationSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setApplicationSubmitted(true);
+    const job = JOBS.find((item) => item.id === activeJobId);
+    if (!job) return;
+    const data = new FormData(e.currentTarget);
+    data.set("roleId", job.id);
+    data.set("roleTitle", job.title);
+    setApplicationError("");
+    setApplicationPending(true);
+    try {
+      await postForm("/api/applications", data);
+      setApplicationSubmitted(true);
+    } catch (err) {
+      setApplicationError(err instanceof Error ? err.message : "Could not send the application");
+    } finally {
+      setApplicationPending(false);
+    }
+  };
+
+  const handlePartnerSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    setPartnerError("");
+    setPartnerPending(true);
+    try {
+      await postJson("/api/partners", {
+        fullName: String(data.get("fullName") || ""),
+        phone: String(data.get("phone") || ""),
+        experience: String(data.get("experience") || ""),
+        location: String(data.get("location") || ""),
+      });
+      setPartnerSubmitted(true);
+    } catch (err) {
+      setPartnerError(err instanceof Error ? err.message : "Could not send the application");
+    } finally {
+      setPartnerPending(false);
+    }
+  };
+
+  const handleIdeaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!wishlistIdea.trim()) return;
+    setIdeaError("");
+    setIdeaPending(true);
+    try {
+      await postJson("/api/ideas", { body: wishlistIdea.trim() });
+      setWishlistSubmitted(true);
+    } catch (err) {
+      setIdeaError(err instanceof Error ? err.message : "Could not save that idea");
+    } finally {
+      setIdeaPending(false);
+    }
   };
 
   return (
@@ -1021,11 +1105,15 @@ export default function App() {
                         />
                         <button
                           type="submit"
+                          disabled={waitlistPending}
                           className="whitespace-nowrap rounded-xl bg-gradient-to-r from-teal-600 to-teal-500 px-8 py-4 font-bold text-white shadow-lg shadow-teal-500/20 transition-all hover:shadow-xl hover:shadow-teal-500/30 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          Join Now
+                          {waitlistPending ? "Joining..." : "Join Now"}
                         </button>
                       </div>
+                      {waitlistError ? (
+                        <p className="text-sm text-red-600">{waitlistError}</p>
+                      ) : null}
                     </form>
                   )}
                 </div>
@@ -1123,10 +1211,14 @@ export default function App() {
                           />
                           <button
                             type="submit"
+                            disabled={contactPending}
                             className="w-full rounded-lg bg-slate-900 py-3 font-bold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            Send Message
+                            {contactPending ? "Sending..." : "Send Message"}
                           </button>
+                          {contactError ? (
+                            <p className="text-sm text-red-600">{contactError}</p>
+                          ) : null}
                         </form>
                       )}
                     </div>
@@ -2186,6 +2278,7 @@ export default function App() {
                             </label>
                             <input
                               type="text"
+                              name="fullName"
                               placeholder="Your full name"
                               required
                               className={`w-full rounded-xl border border-slate-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 ${accentRing}`}
@@ -2197,6 +2290,7 @@ export default function App() {
                             </label>
                             <input
                               type="email"
+                              name="email"
                               placeholder="you@email.com"
                               required
                               className={`w-full rounded-xl border border-slate-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 ${accentRing}`}
@@ -2211,6 +2305,7 @@ export default function App() {
                             </label>
                             <input
                               type="tel"
+                              name="phone"
                               placeholder="+91 98765 43210"
                               className={`w-full rounded-xl border border-slate-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 ${accentRing}`}
                             />
@@ -2221,6 +2316,7 @@ export default function App() {
                             </label>
                             <input
                               type="url"
+                              name="linkedinUrl"
                               placeholder="https://linkedin.com/in/you"
                               className={`w-full rounded-xl border border-slate-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 ${accentRing}`}
                             />
@@ -2232,6 +2328,7 @@ export default function App() {
                             Years of Experience
                           </label>
                           <select
+                            name="experience"
                             required
                             className={`w-full rounded-xl border border-slate-200 bg-gray-50 px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 ${accentRing}`}
                           >
@@ -2262,6 +2359,7 @@ export default function App() {
                             </span>
                             <input
                               type="file"
+                              name="resume"
                               accept=".pdf,.doc,.docx"
                               className="hidden"
                               required
@@ -2275,6 +2373,7 @@ export default function App() {
                           </label>
                           <input
                             type="url"
+                            name="githubUrl"
                             placeholder="https://github.com/you"
                             className={`w-full rounded-xl border border-slate-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 ${accentRing}`}
                           />
@@ -2286,6 +2385,7 @@ export default function App() {
                             *
                           </label>
                           <textarea
+                            name="whyJoin"
                             rows={4}
                             placeholder="Tell us about yourself and why this role excites you..."
                             required
@@ -2293,11 +2393,15 @@ export default function App() {
                           />
                         </div>
 
+                        {applicationError ? (
+                          <p className="mb-4 text-sm text-red-600">{applicationError}</p>
+                        ) : null}
                         <button
                           type="submit"
-                          className={`w-full rounded-2xl bg-gradient-to-r ${gradientBtn} py-4 font-bold text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl`}
+                          disabled={applicationPending}
+                          className={`w-full rounded-2xl bg-gradient-to-r ${gradientBtn} py-4 font-bold text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50`}
                         >
-                          Submit Application
+                          {applicationPending ? "Sending..." : "Submit Application"}
                         </button>
                       </form>
                     )}
@@ -2612,20 +2716,20 @@ export default function App() {
                   </div>
                 ) : (
                   <form
-                    onSubmit={(e) => { e.preventDefault(); setPartnerSubmitted(true); }}
+                    onSubmit={handlePartnerSubmit}
                     className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-sm md:p-10"
                   >
                     <div className="mb-6">
                       <label className="mb-2 block text-sm font-semibold text-slate-300">Full Name *</label>
-                      <input type="text" placeholder="Your full name" required className="w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                      <input type="text" name="fullName" placeholder="Your full name" required className="w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500" />
                     </div>
                     <div className="mb-6">
                       <label className="mb-2 block text-sm font-semibold text-slate-300">Phone / WhatsApp Number *</label>
-                      <input type="tel" placeholder="+91 98765 43210" required className="w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                      <input type="tel" name="phone" placeholder="+91 98765 43210" required className="w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500" />
                     </div>
                     <div className="mb-6">
                       <label className="mb-2 block text-sm font-semibold text-slate-300">Years of Experience in Travel *</label>
-                      <select required className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+                      <select name="experience" required className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
                         <option value="">Select experience</option>
                         <option>2 Years</option>
                         <option>3–5 Years</option>
@@ -2634,10 +2738,13 @@ export default function App() {
                     </div>
                     <div className="mb-8">
                       <label className="mb-2 block text-sm font-semibold text-slate-300">Current Location *</label>
-                      <input type="text" placeholder="City, State" required className="w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                      <input type="text" name="location" placeholder="City, State" required className="w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500" />
                     </div>
-                    <button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 py-4 font-bold text-white shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] hover:shadow-xl">
-                      Submit Application &amp; Get Started
+                    {partnerError ? (
+                      <p className="mb-4 text-sm text-red-300">{partnerError}</p>
+                    ) : null}
+                    <button type="submit" disabled={partnerPending} className="w-full rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 py-4 font-bold text-white shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50">
+                      {partnerPending ? "Sending..." : "Submit Application & Get Started"}
                     </button>
                   </form>
                 )}
@@ -2715,7 +2822,7 @@ export default function App() {
                     <span className="font-semibold">Got it! Your idea is in the queue. Thank you.</span>
                   </div>
                 ) : (
-                  <form onSubmit={(e) => { e.preventDefault(); if (wishlistIdea.trim()) setWishlistSubmitted(true); }} className="space-y-4">
+                  <form onSubmit={handleIdeaSubmit} className="space-y-4">
                     <textarea
                       value={wishlistIdea}
                       onChange={(e) => setWishlistIdea(e.target.value)}
@@ -2723,8 +2830,11 @@ export default function App() {
                       rows={3}
                       className="w-full resize-none rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
                     />
-                    <button type="submit" disabled={!wishlistIdea.trim()} className="rounded-xl bg-teal-600 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-teal-700 disabled:opacity-40">
-                      Submit Idea
+                    {ideaError ? (
+                      <p className="text-sm text-red-600">{ideaError}</p>
+                    ) : null}
+                    <button type="submit" disabled={!wishlistIdea.trim() || ideaPending} className="rounded-xl bg-teal-600 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-teal-700 disabled:opacity-40">
+                      {ideaPending ? "Sending..." : "Submit Idea"}
                     </button>
                   </form>
                 )}

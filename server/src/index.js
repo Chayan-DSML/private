@@ -1,0 +1,369 @@
+import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import cors from "cors";
+import dotenv from "dotenv";
+import express from "express";
+import multer from "multer";
+import { ensureAdmin, loginAdmin, requireAdmin } from "./auth.js";
+import { createPool, migrate } from "./db.js";
+
+const serverRoot = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+);
+dotenv.config({ path: path.join(serverRoot, ".env") });
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const hits = new Map();
+
+function text(value, max) {
+  const trimmed = String(value ?? "").trim();
+  if (!trimmed || trimmed.length > max) return null;
+  return trimmed;
+}
+
+function optionalUrl(value) {
+  const trimmed = String(value ?? "").trim();
+  if (!trimmed) return "";
+  if (trimmed.length > 500) return null;
+  if (!/^https?:\/\//i.test(trimmed)) return null;
+  return trimmed;
+}
+
+function rateLimit(max, windowMs) {
+  return (req, res, next) => {
+    const key = `${req.ip}:${req.path}`;
+    const now = Date.now();
+    const recent = (hits.get(key) || []).filter((time) => now - time < windowMs);
+    if (recent.length >= max) {
+      return res
+        .status(429)
+        .json({ error: "Too many requests. Try again shortly." });
+    }
+    recent.push(now);
+    hits.set(key, recent);
+    return next();
+  };
+}
+
+export function createApp(pool, uploadDir) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+  const upload = multer({
+    storage: multer.diskStorage({
+      destination: uploadDir,
+      filename: (_req, file, callback) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        callback(null, `${crypto.randomUUID()}${ext}`);
+      },
+    }),
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (_req, file, callback) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      const allowed = ext === ".pdf" || ext === ".doc" || ext === ".docx";
+      callback(
+        allowed ? null : new Error("Resume must be a PDF, DOC, or DOCX"),
+        allowed,
+      );
+    },
+  });
+
+  const app = express();
+  app.set("trust proxy", 1);
+  app.use(
+    cors({
+      origin: process.env.CORS_ORIGIN || "http://127.0.0.1:5173",
+    }),
+  );
+  app.use(express.json({ limit: "100kb" }));
+
+  const publicWrite = rateLimit(30, 60_000);
+
+  app.get("/api/health", async (_req, res, next) => {
+    try {
+      await pool.query("SELECT 1");
+      res.json({ status: "ok" });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/waitlist", publicWrite, async (req, res, next) => {
+    try {
+      const email = text(req.body?.email, 320)?.toLowerCase();
+      if (!email || !EMAIL.test(email)) {
+        return res.status(400).json({ error: "Enter a valid email address" });
+      }
+      const inserted = await pool.query(
+        `INSERT INTO waitlist_signups (email)
+         VALUES ($1)
+         ON CONFLICT (email) DO NOTHING
+         RETURNING id`,
+        [email],
+      );
+      return res.status(201).json({
+        ok: true,
+        alreadyJoined: inserted.rowCount === 0,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.post("/api/contact", publicWrite, async (req, res, next) => {
+    try {
+      const name = text(req.body?.name, 200);
+      const email = text(req.body?.email, 320)?.toLowerCase();
+      const message = text(req.body?.message, 5000);
+      if (!name || !email || !EMAIL.test(email) || !message) {
+        return res.status(400).json({ error: "Name, email, and message are required" });
+      }
+      const inserted = await pool.query(
+        `INSERT INTO contact_messages (name, email, message)
+         VALUES ($1, $2, $3)
+         RETURNING id`,
+        [name, email, message],
+      );
+      return res.status(201).json({ ok: true, id: inserted.rows[0].id });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.post("/api/partners", publicWrite, async (req, res, next) => {
+    try {
+      const fullName = text(req.body?.fullName, 200);
+      const phone = text(req.body?.phone, 40);
+      const experience = text(req.body?.experience, 80);
+      const location = text(req.body?.location, 200);
+      if (!fullName || !phone || !experience || !location) {
+        return res.status(400).json({ error: "All partner fields are required" });
+      }
+      const inserted = await pool.query(
+        `INSERT INTO partner_applications (full_name, phone, experience, location)
+         VALUES ($1, $2, $3, $4)
+         RETURNING id`,
+        [fullName, phone, experience, location],
+      );
+      return res.status(201).json({ ok: true, id: inserted.rows[0].id });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.post("/api/ideas", publicWrite, async (req, res, next) => {
+    try {
+      const body = text(req.body?.body, 2000);
+      if (!body) {
+        return res.status(400).json({ error: "Describe the idea you want us to build" });
+      }
+      const inserted = await pool.query(
+        `INSERT INTO feature_ideas (body) VALUES ($1) RETURNING id`,
+        [body],
+      );
+      return res.status(201).json({ ok: true, id: inserted.rows[0].id });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.post(
+    "/api/applications",
+    publicWrite,
+    upload.single("resume"),
+    async (req, res, next) => {
+      try {
+        const roleId = text(req.body?.roleId, 80);
+        const roleTitle = text(req.body?.roleTitle, 200);
+        const fullName = text(req.body?.fullName, 200);
+        const email = text(req.body?.email, 320)?.toLowerCase();
+        const phone = String(req.body?.phone ?? "").trim();
+        const experience = text(req.body?.experience, 80);
+        const whyJoin = text(req.body?.whyJoin, 5000);
+        const linkedinUrl = optionalUrl(req.body?.linkedinUrl);
+        const githubUrl = optionalUrl(req.body?.githubUrl);
+        if (
+          !roleId ||
+          !roleTitle ||
+          !fullName ||
+          !email ||
+          !EMAIL.test(email) ||
+          !experience ||
+          !whyJoin ||
+          linkedinUrl === null ||
+          githubUrl === null ||
+          phone.length > 40 ||
+          !req.file
+        ) {
+          if (req.file) await fs.promises.unlink(req.file.path).catch(() => {});
+          return res.status(400).json({
+            error: "Name, email, experience, resume, and a short note are required",
+          });
+        }
+        const inserted = await pool.query(
+          `INSERT INTO job_applications (
+             role_id, role_title, full_name, email, phone, linkedin_url,
+             experience, github_url, why_join, resume_filename, resume_stored_name
+           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+           RETURNING id`,
+          [
+            roleId,
+            roleTitle,
+            fullName,
+            email,
+            phone,
+            linkedinUrl,
+            experience,
+            githubUrl,
+            whyJoin,
+            path.basename(req.file.originalname),
+            req.file.filename,
+          ],
+        );
+        return res.status(201).json({ ok: true, id: inserted.rows[0].id });
+      } catch (error) {
+        if (req.file) await fs.promises.unlink(req.file.path).catch(() => {});
+        return next(error);
+      }
+    },
+  );
+
+  app.post("/api/admin/login", async (req, res, next) => {
+    try {
+      const session = await loginAdmin(pool, req.body?.email, req.body?.password);
+      if (!session) {
+        return res.status(401).json({ error: "Email or password is incorrect" });
+      }
+      return res.json(session);
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.get("/api/admin/waitlist", requireAdmin, async (_req, res, next) => {
+    try {
+      const result = await pool.query(
+        "SELECT id, email, created_at FROM waitlist_signups ORDER BY created_at DESC",
+      );
+      res.json({ items: result.rows });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/admin/contacts", requireAdmin, async (_req, res, next) => {
+    try {
+      const result = await pool.query(
+        "SELECT id, name, email, message, created_at FROM contact_messages ORDER BY created_at DESC",
+      );
+      res.json({ items: result.rows });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/admin/partners", requireAdmin, async (_req, res, next) => {
+    try {
+      const result = await pool.query(
+        `SELECT id, full_name, phone, experience, location, created_at
+         FROM partner_applications ORDER BY created_at DESC`,
+      );
+      res.json({ items: result.rows });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/admin/ideas", requireAdmin, async (_req, res, next) => {
+    try {
+      const result = await pool.query(
+        "SELECT id, body, created_at FROM feature_ideas ORDER BY created_at DESC",
+      );
+      res.json({ items: result.rows });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/admin/applications", requireAdmin, async (_req, res, next) => {
+    try {
+      const result = await pool.query(
+        `SELECT id, role_id, role_title, full_name, email, phone, linkedin_url,
+                experience, github_url, why_join, resume_filename, created_at
+         FROM job_applications ORDER BY created_at DESC`,
+      );
+      res.json({ items: result.rows });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/admin/applications/:id/resume", requireAdmin, async (req, res, next) => {
+    try {
+      const result = await pool.query(
+        "SELECT resume_filename, resume_stored_name FROM job_applications WHERE id = $1",
+        [req.params.id],
+      );
+      const row = result.rows[0];
+      if (!row) return res.status(404).json({ error: "Application not found" });
+      const stored = path.basename(row.resume_stored_name);
+      const filePath = path.join(uploadDir, stored);
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: "Resume file not found" });
+      }
+      return res.download(filePath, row.resume_filename);
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.use((error, _req, res, _next) => {
+    if (error instanceof multer.MulterError && error.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({ error: "Resume must be 5MB or smaller" });
+    }
+    if (error?.type === "entity.parse.failed") {
+      return res.status(400).json({ error: "Invalid JSON" });
+    }
+    if (error instanceof Error && /Resume must be/.test(error.message)) {
+      return res.status(400).json({ error: error.message });
+    }
+    console.error(error);
+    return res.status(500).json({ error: "Something went wrong. Please try again." });
+  });
+
+  return app;
+}
+
+export async function start() {
+  const pool = createPool();
+  await migrate(pool);
+  await ensureAdmin(pool);
+  const uploadDir = path.resolve(
+    serverRoot,
+    process.env.UPLOAD_DIR || "uploads",
+  );
+  const app = createApp(pool, uploadDir);
+  const port = Number(process.env.PORT || 8787);
+  const server = await new Promise((resolve) => {
+    const listener = app.listen(port, "0.0.0.0", () => resolve(listener));
+  });
+  const address = server.address();
+  const boundPort = typeof address === "object" && address ? address.port : port;
+  return { server, pool, port: boundPort };
+}
+
+const isMain =
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isMain) {
+  start()
+    .then(({ port }) => {
+      console.log(`Tourbhook API listening on ${port}`);
+    })
+    .catch((error) => {
+      console.error(error);
+      process.exit(1);
+    });
+}
