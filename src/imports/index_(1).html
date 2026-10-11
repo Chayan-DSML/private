@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tour Bhook - AI-Optimized Travel</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Lexend', 'sans-serif'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out forwards',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        .page-section {
+            display: none;
+        }
+
+        .page-section.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body class="font-sans text-slate-800 bg-gray-50 min-h-screen flex flex-col">
+
+    <!-- Navigation -->
+    <nav
+        class="w-full py-4 px-4 md:px-12 flex justify-between items-center max-w-7xl mx-auto sticky top-0 bg-gray-50/90 backdrop-blur-md z-40 border-b border-slate-100/50">
+        <button onclick="navigateTo('home')" class="hover:opacity-90 transition-opacity flex items-center gap-3 group">
+            <div
+                class="relative flex items-center justify-center w-10 h-10 overflow-hidden rounded-xl transition-transform duration-300 group-hover:scale-105 bg-white shadow-sm">
+                <!-- Fallback to icon if image fails (handled in JS if needed, but simple CSS/HTML here) -->
+                <img src="./public/file.png" alt="Tour Bhook Logo" class="w-full h-full object-contain"
+                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                <div class="w-full h-full bg-teal-600 flex items-center justify-center hidden">
+                    <i data-lucide="compass" class="w-6 h-6 text-white"></i>
+                </div>
+            </div>
+            <span class="text-2xl font-bold tracking-tight text-slate-900">
+                Tour <span class="text-teal-600">Bhook</span>
+            </span>
+        </button>
+
+        <div class="hidden md:flex space-x-8 text-sm font-medium text-slate-500">
+            <button onclick="navigateTo('home')"
+                class="nav-link hover:text-slate-900 transition-colors text-slate-900 font-semibold"
+                data-page="home">Home</button>
+            <button onclick="navigateTo('about')" class="nav-link hover:text-slate-900 transition-colors"
+                data-page="about">About us</button>
+            <button onclick="navigateTo('home', 'services')" class="hover:text-slate-900 transition-colors">Our
+                services</button>
+            <button onclick="navigateTo('home', 'contact')"
+                class="hover:text-slate-900 transition-colors">Contact</button>
+            <button onclick="navigateTo('home', 'waitlist')"
+                class="px-5 py-2 bg-teal-600 text-white rounded-full font-semibold hover:bg-teal-700 transition-all shadow-md shadow-teal-600/10">Join
+                Waitlist</button>
+        </div>
+
+        <button class="md:hidden text-slate-900">
+            <i data-lucide="menu" class="w-6 h-6"></i>
+        </button>
+    </nav>
+
+    <main class="flex-grow">
+        <!-- Home Page -->
+        <div id="home-page" class="page-section active">
+
+            <!-- Hero Section -->
+            <div class="px-4 md:px-8 max-w-7xl mx-auto mb-20 pt-6">
+                <div class="relative rounded-[2.5rem] overflow-hidden h-[500px] md:h-[600px] shadow-2xl">
+                    <img src="https://images.unsplash.com/photo-1537996194471-e657df975ab4?q=80&w=2838&auto=format&fit=crop"
+                        alt="Bali Temple" class="absolute inset-0 w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent"></div>
+                    <div class="absolute inset-0 flex flex-col justify-center px-8 md:px-16 max-w-2xl text-white">
+                        <div
+                            class="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider mb-4 w-fit border border-white/20">
+                            <i data-lucide="sparkles" class="w-3 h-3 text-teal-300"></i> AI-Optimized Travel
+                        </div>
+                        <h1 class="text-4xl md:text-6xl font-bold leading-tight mb-6">
+                            Tour Bhook: The Smart Way to <span class="text-teal-300">Explore the World</span>
+                        </h1>
+                        <p class="text-lg md:text-xl text-gray-200 mb-8 max-w-lg">
+                            Minimize planning time and maximize discovery. We use intelligent routing to build your
+                            perfect journey.
+                        </p>
+                        <div>
+                            <button onclick="navigateTo('home', 'waitlist')"
+                                class="bg-white text-slate-900 hover:bg-teal-50 px-8 py-3 rounded-full font-semibold transition-all flex items-center gap-2 group">
+                                Start Planning
+                                <i data-lucide="arrow-right"
+                                    class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="max-w-4xl mx-auto px-6 mb-24 text-center">
+                <div class="text-teal-600 font-semibold tracking-wide uppercase text-sm mb-2">The Tour Bhook Promise
+                </div>
+                <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-12">Travel Smarter, Not Harder</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="p-6">
+                        <div class="text-4xl md:text-5xl font-bold text-slate-900 mb-2">~30%</div>
+                        <div class="text-slate-500">Travel Time Saved</div>
+                    </div>
+                    <div class="p-6 border-y md:border-y-0 md:border-x border-slate-200">
+                        <div class="text-4xl md:text-5xl font-bold text-slate-900 mb-2">Zero</div>
+                        <div class="text-slate-500">Information Noise</div>
+                    </div>
+                    <div class="p-6">
+                        <div class="text-4xl md:text-5xl font-bold text-slate-900 mb-2">100%</div>
+                        <div class="text-slate-500">Personalized for You</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Services -->
+            <div id="services" class="bg-white py-20">
+                <div class="max-w-7xl mx-auto px-6">
+                    <div class="text-center mb-16">
+                        <h2 class="text-3xl md:text-4xl font-bold text-slate-900">Intelligent Travel Planning</h2>
+                        <p class="text-slate-500 mt-4 max-w-2xl mx-auto">
+                            We've solved the biggest travel headaches—inefficient routes and unreliable info.
+                        </p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+                        <div
+                            class="flex flex-col items-center text-center group hover:-translate-y-2 transition-transform duration-300">
+                            <div
+                                class="w-16 h-16 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-teal-600 group-hover:text-white transition-colors">
+                                <i data-lucide="zap" class="w-8 h-8"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-slate-900 mb-3">Smart Route Optimization</h3>
+                            <p class="text-slate-500 leading-relaxed px-4">
+                                Our engine calculates the most time-efficient path for your trip, saving you hours.
+                            </p>
+                        </div>
+                        <div
+                            class="flex flex-col items-center text-center group hover:-translate-y-2 transition-transform duration-300">
+                            <div
+                                class="w-16 h-16 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-teal-600 group-hover:text-white transition-colors">
+                                <i data-lucide="message-square" class="w-8 h-8"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-slate-900 mb-3">Instant Review Summaries</h3>
+                            <p class="text-slate-500 leading-relaxed px-4">
+                                We provide a single, concise AI summary of what matters most about every location.
+                            </p>
+                        </div>
+                        <div
+                            class="flex flex-col items-center text-center group hover:-translate-y-2 transition-transform duration-300">
+                            <div
+                                class="w-16 h-16 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-teal-600 group-hover:text-white transition-colors">
+                                <i data-lucide="shield" class="w-8 h-8"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-slate-900 mb-3">Trusted Content Only</h3>
+                            <p class="text-slate-500 leading-relaxed px-4">
+                                Our strict zero-tolerance moderation ensures you only see authentic recommendations.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Waitlist Form Section -->
+            <div id="waitlist" class="max-w-7xl mx-auto px-6 py-20 flex justify-center">
+                <div class="w-full max-w-4xl bg-white rounded-[2rem] shadow-xl p-8 md:p-12 border border-slate-100">
+                    <div class="text-center">
+                        <h2 class="text-3xl font-bold mb-4">Join the Waitlist</h2>
+                        <p class="text-slate-500 mb-8">Be the first to experience the future of travel.</p>
+
+                        <!-- Success Message -->
+                        <div id="waitlist-success" class="hidden py-8">
+                            <p class="text-teal-600 font-bold text-xl mb-2">You're on the list!</p>
+                            <p class="text-slate-500">We'll let you know when we launch.</p>
+                        </div>
+
+                        <!-- Form -->
+                        <form id="waitlist-form" class="space-y-4 max-w-lg mx-auto">
+                            <div id="waitlist-error"
+                                class="hidden bg-red-50 text-red-500 p-3 rounded-lg text-sm border border-red-100">
+                                Something went wrong. Please try again.
+                            </div>
+                            <div class="flex flex-col md:flex-row gap-4">
+                                <input type="email" name="email" placeholder="Email address"
+                                    class="flex-grow px-6 py-4 rounded-xl bg-gray-50 border focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                                    required>
+                                <button type="submit"
+                                    class="bg-teal-600 text-white font-bold px-8 py-4 rounded-xl hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+                                    Join Now
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Section -->
+            <section id="contact" class="py-20 bg-white border-t border-slate-100">
+                <div class="max-w-7xl mx-auto px-6">
+                    <div class="flex flex-col md:flex-row gap-16">
+                        <div class="md:w-5/12 text-center md:text-left">
+                            <h2 class="text-3xl font-bold text-slate-900 mb-6">Get in touch</h2>
+                            <p class="text-slate-500 mb-8">Have questions? We'd love to hear from you.</p>
+                            <div class="flex items-center justify-center md:justify-start gap-4">
+                                <i data-lucide="mail" class="text-teal-600"></i>
+                                <span class="text-slate-700">hello.tourbhook@gmail.com</span>
+                            </div>
+                        </div>
+                        <div class="md:w-7/12">
+                            <div class="bg-gray-50 rounded-2xl p-8 border border-slate-100">
+                                <!-- Success Message -->
+                                <div id="contact-success" class="hidden text-center py-12">
+                                    <h3 class="text-xl font-bold mb-2">Message Sent!</h3>
+                                    <p class="text-slate-400">We'll get back to you shortly.</p>
+                                </div>
+
+                                <!-- Form -->
+                                <form id="contact-form" class="space-y-6">
+                                    <div id="contact-error"
+                                        class="hidden bg-red-50 text-red-500 p-4 rounded-xl text-sm border border-red-100">
+                                        Unable to send message. Please try again later.
+                                    </div>
+                                    <input type="text" name="name" placeholder="Name"
+                                        class="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                                        required>
+                                    <input type="email" name="email" placeholder="Email"
+                                        class="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                                        required>
+                                    <textarea name="message" placeholder="Message" rows="4"
+                                        class="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                                        required></textarea>
+                                    <button type="submit"
+                                        class="w-full bg-slate-900 text-white py-3 rounded-lg font-bold hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                        Send Message
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- About Page -->
+        <div id="about-page" class="page-section max-w-4xl mx-auto px-6 py-20 animate-fade-in">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-900 mb-8">About Tour Bhook</h1>
+            <div class="prose prose-lg prose-slate text-slate-600">
+                <p class="lead text-xl mb-6">
+                    We believe travel should be about the experience, not the stress of planning.
+                </p>
+                <p class="mb-6">
+                    Born from a passion for exploration and a frustration with scattered information, Tour Bhook is
+                    building the world's most intelligent travel companion. We are a team of travelers, engineers, and
+                    dreamers dedicated to solving the complexities of modern travel.
+                </p>
+                <p class="mb-6">
+                    Our mission is simple: <strong>Minimize planning time and maximize discovery.</strong> By leveraging
+                    advanced AI and community-driven insights, we turn weeks of research into seconds of clarity.
+                </p>
+                <div class="bg-teal-50 p-8 rounded-2xl border border-teal-100 mt-12">
+                    <h3 className="text-teal-900 font-bold text-xl mb-4">Our Core Values</h3>
+                    <ul class="space-y-3">
+                        <li class="flex items-center gap-3"><i data-lucide="check-circle"
+                                class="w-5 h-5 text-teal-600"></i> <span>Authenticity in every recommendation</span>
+                        </li>
+                        <li class="flex items-center gap-3"><i data-lucide="check-circle"
+                                class="w-5 h-5 text-teal-600"></i> <span>Efficiency without compromising
+                                spontaneity</span></li>
+                        <li class="flex items-center gap-3"><i data-lucide="check-circle"
+                                class="w-5 h-5 text-teal-600"></i> <span>Trust through transparency</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Careers Page -->
+        <div id="careers-page" class="page-section max-w-4xl mx-auto px-6 py-32 text-center animate-fade-in">
+            <div
+                class="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-8">
+                <i data-lucide="briefcase" class="w-10 h-10"></i>
+            </div>
+            <h1 class="text-3xl md:text-5xl font-bold text-slate-900 mb-6">Join Our Team</h1>
+            <div class="max-w-2xl mx-auto bg-white border border-slate-200 shadow-xl rounded-2xl p-10 md:p-16">
+                <p class="text-xl md:text-2xl font-bold text-slate-700 leading-relaxed">
+                    New Job Openings for Freshers and Experienced Coming Soon
+                </p>
+                <p class="text-slate-500 mt-4">
+                    We are preparing to scale. Check back later for opportunities to define the future of travel.
+                </p>
+            </div>
+        </div>
+
+        <!-- Construction Pages (Generic Template) -->
+        <div id="blog-page" class="page-section max-w-4xl mx-auto px-6 py-32 text-center animate-fade-in">
+            <div
+                class="w-20 h-20 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-8">
+                <i data-lucide="file-text" class="w-10 h-10"></i>
+            </div>
+            <h1 class="text-3xl md:text-5xl font-bold text-slate-900 mb-6">Blog</h1>
+            <div
+                class="inline-block bg-orange-100 text-orange-800 px-6 py-3 rounded-full font-bold text-sm tracking-wide uppercase">
+                Under Construction
+            </div>
+            <p class="text-slate-500 mt-6 max-w-lg mx-auto">
+                We're working hard to bring you this resource. Please check back soon for updates.
+            </p>
+        </div>
+
+        <div id="help-page" class="page-section max-w-4xl mx-auto px-6 py-32 text-center animate-fade-in">
+            <div
+                class="w-20 h-20 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-8">
+                <i data-lucide="help-circle" class="w-10 h-10"></i>
+            </div>
+            <h1 class="text-3xl md:text-5xl font-bold text-slate-900 mb-6">Help Center</h1>
+            <div
+                class="inline-block bg-orange-100 text-orange-800 px-6 py-3 rounded-full font-bold text-sm tracking-wide uppercase">
+                Under Construction
+            </div>
+            <p class="text-slate-500 mt-6 max-w-lg mx-auto">
+                We're working hard to bring you this resource. Please check back soon for updates.
+            </p>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-50 border-t border-slate-200 pt-16 pb-8">
+        <div class="max-w-7xl mx-auto px-6 text-center md:text-left">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+                <div>
+                    <button onclick="navigateTo('home')"
+                        class="mb-4 hover:opacity-90 transition-opacity flex items-center gap-2 group">
+                        <div
+                            class="relative flex items-center justify-center w-8 h-8 overflow-hidden rounded-lg bg-white shadow-sm">
+                            <img src="./public/file.png" alt="Logo" class="w-full h-full object-contain"
+                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                            <div class="w-full h-full bg-teal-600 flex items-center justify-center hidden">
+                                <i data-lucide="compass" class="w-4 h-4 text-white"></i>
+                            </div>
+                        </div>
+                        <span class="text-xl font-bold tracking-tight text-slate-900">
+                            Tour <span class="text-teal-600">Bhook</span>
+                        </span>
+                    </button>
+                    <p class="text-slate-500 text-sm">
+                        Revolutionizing travel with AI-driven efficiency.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-900 mb-4">Company</h4>
+                    <ul class="space-y-2 text-sm text-slate-500">
+                        <li><button onclick="navigateTo('about')" class="hover:text-teal-600">About Us</button></li>
+                        <li><button onclick="navigateTo('careers')" class="hover:text-teal-600">Careers</button></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-900 mb-4">Resources</h4>
+                    <ul class="space-y-2 text-sm text-slate-500">
+                        <li><button onclick="navigateTo('blog')" class="hover:text-teal-600">Blog</button></li>
+                        <li><button onclick="navigateTo('help')" class="hover:text-teal-600">Help Center</button></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-900 mb-4">Follow Us</h4>
+                    <div class="flex justify-center md:justify-start space-x-4">
+                        <a href="#"
+                            class="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center hover:bg-teal-600 hover:text-white transition-colors"><i
+                                data-lucide="instagram" class="w-4 h-4"></i></a>
+                        <a href="#"
+                            class="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center hover:bg-teal-600 hover:text-white transition-colors"><i
+                                data-lucide="twitter" class="w-4 h-4"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div
+                class="border-t border-slate-200 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-slate-500">
+                <p>© 2026 Tour Bhook Inc.</p>
+                <div class="flex space-x-6 mt-4 md:mt-0">
+                    <button onclick="showTermsModal()" class="hover:text-slate-900">Terms</button>
+                    <button class="hover:text-slate-900">Privacy</button>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Terms Modal -->
+    <div id="terms-modal"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden shadow-2xl flex flex-col">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-900">Terms and Conditions</h3>
+                <button onclick="hideTermsModal()" class="p-2 hover:bg-slate-100 rounded-full"><i data-lucide="x"
+                        class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto">
+                <div class="prose prose-sm prose-slate">
+                    <p>By using Tour Bhook, you agree to our terms of service regarding travel planning and data usage.
+                    </p>
+                </div>
+            </div>
+            <div class="p-6 border-t border-slate-100 bg-slate-50 text-right">
+                <button onclick="hideTermsModal()" class="px-6 py-2 bg-slate-900 text-white rounded-lg">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
