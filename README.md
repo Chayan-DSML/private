@@ -9,9 +9,9 @@
 
   Run `npm --prefix server i` to install the API dependencies.
 
-  Copy `server/.env.example` to `server/.env`. Set `JWT_SECRET` and `ADMIN_PASSWORD`. `DATABASE_URL` is a PostgreSQL connection string. For Cloud SQL, point it at the Auth Proxy (or the instance URL with `DATABASE_SSL=true`).
+  Copy `server/.env.example` to `server/.env`. Set `DATABASE_PASSWORD`, `JWT_SECRET`, and `ADMIN_PASSWORD`. The API uses MySQL through the Cloud SQL Auth Proxy on `127.0.0.1:3306`.
 
-  Start PostgreSQL, then run `npm --prefix server run dev` and `npm run dev`. The site proxies `/api` to the API on port 8787.
+  Start the Auth Proxy with `INSTANCE_CONNECTION_NAME`, then run `npm --prefix server run dev` and `npm run dev`. The site proxies `/api` to the API on port 8787.
 
   Public forms save leads. Admin reads require `POST /api/admin/login` and a `Bearer` JWT.
   

@@ -7,7 +7,7 @@ import dotenv from "dotenv";
 import express from "express";
 import multer from "multer";
 import { ensureAdmin, loginAdmin, requireAdmin } from "./auth.js";
-import { createPool, migrate } from "./db.js";
+import { createPool, migrate, query } from "./db.js";
 
 const serverRoot = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -82,7 +82,7 @@ export function createApp(pool, uploadDir) {
 
   app.get("/api/health", async (_req, res, next) => {
     try {
-      await pool.query("SELECT 1");
+      await query(pool, "SELECT 1");
       res.json({ status: "ok" });
     } catch (error) {
       next(error);
@@ -95,16 +95,14 @@ export function createApp(pool, uploadDir) {
       if (!email || !EMAIL.test(email)) {
         return res.status(400).json({ error: "Enter a valid email address" });
       }
-      const inserted = await pool.query(
-        `INSERT INTO waitlist_signups (email)
-         VALUES ($1)
-         ON CONFLICT (email) DO NOTHING
-         RETURNING id`,
-        [email],
+      const inserted = await query(
+        pool,
+        "INSERT IGNORE INTO waitlist_signups (id, email) VALUES (?, ?)",
+        [crypto.randomUUID(), email],
       );
       return res.status(201).json({
         ok: true,
-        alreadyJoined: inserted.rowCount === 0,
+        alreadyJoined: inserted.affectedRows === 0,
       });
     } catch (error) {
       return next(error);
@@ -119,13 +117,14 @@ export function createApp(pool, uploadDir) {
       if (!name || !email || !EMAIL.test(email) || !message) {
         return res.status(400).json({ error: "Name, email, and message are required" });
       }
-      const inserted = await pool.query(
-        `INSERT INTO contact_messages (name, email, message)
-         VALUES ($1, $2, $3)
-         RETURNING id`,
-        [name, email, message],
+      const id = crypto.randomUUID();
+      await query(
+        pool,
+        `INSERT INTO contact_messages (id, name, email, message)
+         VALUES (?, ?, ?, ?)`,
+        [id, name, email, message],
       );
-      return res.status(201).json({ ok: true, id: inserted.rows[0].id });
+      return res.status(201).json({ ok: true, id });
     } catch (error) {
       return next(error);
     }
@@ -140,13 +139,14 @@ export function createApp(pool, uploadDir) {
       if (!fullName || !phone || !experience || !location) {
         return res.status(400).json({ error: "All partner fields are required" });
       }
-      const inserted = await pool.query(
-        `INSERT INTO partner_applications (full_name, phone, experience, location)
-         VALUES ($1, $2, $3, $4)
-         RETURNING id`,
-        [fullName, phone, experience, location],
+      const id = crypto.randomUUID();
+      await query(
+        pool,
+        `INSERT INTO partner_applications (id, full_name, phone, experience, location)
+         VALUES (?, ?, ?, ?, ?)`,
+        [id, fullName, phone, experience, location],
       );
-      return res.status(201).json({ ok: true, id: inserted.rows[0].id });
+      return res.status(201).json({ ok: true, id });
     } catch (error) {
       return next(error);
     }
@@ -158,11 +158,13 @@ export function createApp(pool, uploadDir) {
       if (!body) {
         return res.status(400).json({ error: "Describe the idea you want us to build" });
       }
-      const inserted = await pool.query(
-        `INSERT INTO feature_ideas (body) VALUES ($1) RETURNING id`,
-        [body],
+      const id = crypto.randomUUID();
+      await query(
+        pool,
+        "INSERT INTO feature_ideas (id, body) VALUES (?, ?)",
+        [id, body],
       );
-      return res.status(201).json({ ok: true, id: inserted.rows[0].id });
+      return res.status(201).json({ ok: true, id });
     } catch (error) {
       return next(error);
     }
@@ -201,13 +203,15 @@ export function createApp(pool, uploadDir) {
             error: "Name, email, experience, resume, and a short note are required",
           });
         }
-        const inserted = await pool.query(
+        const id = crypto.randomUUID();
+        await query(
+          pool,
           `INSERT INTO job_applications (
-             role_id, role_title, full_name, email, phone, linkedin_url,
+             id, role_id, role_title, full_name, email, phone, linkedin_url,
              experience, github_url, why_join, resume_filename, resume_stored_name
-           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-           RETURNING id`,
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
+            id,
             roleId,
             roleTitle,
             fullName,
@@ -221,7 +225,7 @@ export function createApp(pool, uploadDir) {
             req.file.filename,
           ],
         );
-        return res.status(201).json({ ok: true, id: inserted.rows[0].id });
+        return res.status(201).json({ ok: true, id });
       } catch (error) {
         if (req.file) await fs.promises.unlink(req.file.path).catch(() => {});
         return next(error);
@@ -243,10 +247,11 @@ export function createApp(pool, uploadDir) {
 
   app.get("/api/admin/waitlist", requireAdmin, async (_req, res, next) => {
     try {
-      const result = await pool.query(
+      const items = await query(
+        pool,
         "SELECT id, email, created_at FROM waitlist_signups ORDER BY created_at DESC",
       );
-      res.json({ items: result.rows });
+      res.json({ items });
     } catch (error) {
       next(error);
     }
@@ -254,10 +259,11 @@ export function createApp(pool, uploadDir) {
 
   app.get("/api/admin/contacts", requireAdmin, async (_req, res, next) => {
     try {
-      const result = await pool.query(
+      const items = await query(
+        pool,
         "SELECT id, name, email, message, created_at FROM contact_messages ORDER BY created_at DESC",
       );
-      res.json({ items: result.rows });
+      res.json({ items });
     } catch (error) {
       next(error);
     }
@@ -265,11 +271,12 @@ export function createApp(pool, uploadDir) {
 
   app.get("/api/admin/partners", requireAdmin, async (_req, res, next) => {
     try {
-      const result = await pool.query(
+      const items = await query(
+        pool,
         `SELECT id, full_name, phone, experience, location, created_at
          FROM partner_applications ORDER BY created_at DESC`,
       );
-      res.json({ items: result.rows });
+      res.json({ items });
     } catch (error) {
       next(error);
     }
@@ -277,10 +284,11 @@ export function createApp(pool, uploadDir) {
 
   app.get("/api/admin/ideas", requireAdmin, async (_req, res, next) => {
     try {
-      const result = await pool.query(
+      const items = await query(
+        pool,
         "SELECT id, body, created_at FROM feature_ideas ORDER BY created_at DESC",
       );
-      res.json({ items: result.rows });
+      res.json({ items });
     } catch (error) {
       next(error);
     }
@@ -288,12 +296,13 @@ export function createApp(pool, uploadDir) {
 
   app.get("/api/admin/applications", requireAdmin, async (_req, res, next) => {
     try {
-      const result = await pool.query(
+      const items = await query(
+        pool,
         `SELECT id, role_id, role_title, full_name, email, phone, linkedin_url,
                 experience, github_url, why_join, resume_filename, created_at
          FROM job_applications ORDER BY created_at DESC`,
       );
-      res.json({ items: result.rows });
+      res.json({ items });
     } catch (error) {
       next(error);
     }
@@ -301,11 +310,12 @@ export function createApp(pool, uploadDir) {
 
   app.get("/api/admin/applications/:id/resume", requireAdmin, async (req, res, next) => {
     try {
-      const result = await pool.query(
-        "SELECT resume_filename, resume_stored_name FROM job_applications WHERE id = $1",
+      const rows = await query(
+        pool,
+        "SELECT resume_filename, resume_stored_name FROM job_applications WHERE id = ?",
         [req.params.id],
       );
-      const row = result.rows[0];
+      const row = rows[0];
       if (!row) return res.status(404).json({ error: "Application not found" });
       const stored = path.basename(row.resume_stored_name);
       const filePath = path.join(uploadDir, stored);

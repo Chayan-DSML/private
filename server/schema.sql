@@ -1,51 +1,53 @@
 CREATE TABLE IF NOT EXISTS waitlist_signups (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email TEXT NOT NULL UNIQUE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  email VARCHAR(320) NOT NULL,
+  created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  UNIQUE KEY waitlist_email (email)
 );
 
 CREATE TABLE IF NOT EXISTS contact_messages (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
-  email TEXT NOT NULL,
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  name VARCHAR(200) NOT NULL,
+  email VARCHAR(320) NOT NULL,
   message TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
 );
 
 CREATE TABLE IF NOT EXISTS job_applications (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  role_id TEXT NOT NULL,
-  role_title TEXT NOT NULL,
-  full_name TEXT NOT NULL,
-  email TEXT NOT NULL,
-  phone TEXT,
-  linkedin_url TEXT,
-  experience TEXT NOT NULL,
-  github_url TEXT,
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  role_id VARCHAR(80) NOT NULL,
+  role_title VARCHAR(200) NOT NULL,
+  full_name VARCHAR(200) NOT NULL,
+  email VARCHAR(320) NOT NULL,
+  phone VARCHAR(40) NULL,
+  linkedin_url VARCHAR(500) NULL,
+  experience VARCHAR(80) NOT NULL,
+  github_url VARCHAR(500) NULL,
   why_join TEXT NOT NULL,
-  resume_filename TEXT NOT NULL,
-  resume_stored_name TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  resume_filename VARCHAR(255) NOT NULL,
+  resume_stored_name VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
 );
 
 CREATE TABLE IF NOT EXISTS partner_applications (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  full_name TEXT NOT NULL,
-  phone TEXT NOT NULL,
-  experience TEXT NOT NULL,
-  location TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  full_name VARCHAR(200) NOT NULL,
+  phone VARCHAR(40) NOT NULL,
+  experience VARCHAR(80) NOT NULL,
+  location VARCHAR(200) NOT NULL,
+  created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
 );
 
 CREATE TABLE IF NOT EXISTS feature_ideas (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id CHAR(36) NOT NULL PRIMARY KEY,
   body TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
 );
 
 CREATE TABLE IF NOT EXISTS admin_users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email TEXT NOT NULL UNIQUE,
-  password_hash TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  email VARCHAR(320) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  UNIQUE KEY admin_email (email)
 );

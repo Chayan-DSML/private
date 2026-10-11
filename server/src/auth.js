@@ -1,5 +1,7 @@
+import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { query } from "./db.js";
 
 const TOKEN_TTL = "12h";
 
@@ -22,21 +24,23 @@ export async function ensureAdmin(pool) {
   }
   const rounds = Number(process.env.BCRYPT_ROUNDS || 12);
   const passwordHash = await bcrypt.hash(password, rounds);
-  await pool.query(
-    `INSERT INTO admin_users (email, password_hash)
-     VALUES ($1, $2)
-     ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash`,
-    [email, passwordHash],
+  await query(
+    pool,
+    `INSERT INTO admin_users (id, email, password_hash)
+     VALUES (?, ?, ?) AS new
+     ON DUPLICATE KEY UPDATE password_hash = new.password_hash`,
+    [crypto.randomUUID(), email, passwordHash],
   );
 }
 
 export async function loginAdmin(pool, email, password) {
   const normalized = String(email || "").trim().toLowerCase();
-  const result = await pool.query(
-    "SELECT id, email, password_hash FROM admin_users WHERE email = $1",
+  const rows = await query(
+    pool,
+    "SELECT id, email, password_hash FROM admin_users WHERE email = ?",
     [normalized],
   );
-  const admin = result.rows[0];
+  const admin = rows[0];
   if (!admin) return null;
   const matches = await bcrypt.compare(String(password || ""), admin.password_hash);
   if (!matches) return null;

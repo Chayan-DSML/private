@@ -4,16 +4,14 @@ import path from "node:path";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-process.env.DATABASE_URL =
-  process.env.DATABASE_URL ||
-  "postgres://tourbhook:tourbhook@127.0.0.1:5432/tourbhook";
+process.env.DATABASE_HOST = process.env.DATABASE_HOST || "127.0.0.1";
+process.env.DATABASE_PORT = process.env.DATABASE_PORT || "3306";
 process.env.JWT_SECRET = "test-secret-test-secret";
 process.env.ADMIN_EMAIL = "admin@tourbhook.test";
 process.env.ADMIN_PASSWORD = "test-password-123";
 process.env.BCRYPT_ROUNDS = "4";
 process.env.PORT = "0";
 process.env.UPLOAD_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "tourbhook-uploads-"));
-process.env.DATABASE_SSL = "false";
 
 const { start } = await import("../src/index.js");
 
@@ -35,19 +33,30 @@ async function login() {
   return body.token;
 }
 
-test.before(async () => {
-  await started.pool.query(
-    `TRUNCATE waitlist_signups, contact_messages, job_applications,
-             partner_applications, feature_ideas`,
-  );
-});
+async function clearLeads() {
+  for (const table of [
+    "waitlist_signups",
+    "contact_messages",
+    "job_applications",
+    "partner_applications",
+    "feature_ideas",
+  ]) {
+    await started.pool.query(`TRUNCATE TABLE ${table}`);
+  }
+}
+
+test.before(clearLeads);
 
 test.after(async () => {
+  await clearLeads();
+  await started.pool.query("DELETE FROM admin_users WHERE email = ?", [
+    "admin@tourbhook.test",
+  ]);
   await started.pool.end();
   started.server.close();
 });
 
-test("health check reaches postgres", async () => {
+test("health check reaches MySQL", async () => {
   const response = await fetch(`${base}/api/health`);
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { status: "ok" });

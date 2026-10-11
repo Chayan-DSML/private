@@ -1,9 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import pg from "pg";
-
-const { Pool } = pg;
+import mysql from "mysql2/promise";
 
 const schemaPath = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -12,20 +10,38 @@ const schemaPath = path.join(
 );
 
 export function createPool() {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
-    throw new Error("DATABASE_URL is required");
+  const user = process.env.DATABASE_USER;
+  const password = process.env.DATABASE_PASSWORD;
+  const database = process.env.DATABASE_NAME;
+  if (!user || !password || !database) {
+    throw new Error(
+      "DATABASE_USER, DATABASE_PASSWORD, and DATABASE_NAME are required",
+    );
   }
-  return new Pool({
-    connectionString,
-    ssl:
-      process.env.DATABASE_SSL === "true"
-        ? { rejectUnauthorized: false }
-        : undefined,
+  return mysql.createPool({
+    host: process.env.DATABASE_HOST || "127.0.0.1",
+    port: Number(process.env.DATABASE_PORT || 3306),
+    user,
+    password,
+    database,
+    waitForConnections: true,
+    connectionLimit: 10,
+    timezone: "Z",
   });
+}
+
+export async function query(pool, sql, params = []) {
+  const [result] = await pool.query(sql, params);
+  return result;
 }
 
 export async function migrate(pool) {
   const sql = fs.readFileSync(schemaPath, "utf8");
-  await pool.query(sql);
+  const statements = sql
+    .split(/;\s*(?:\n|$)/)
+    .map((statement) => statement.trim())
+    .filter(Boolean);
+  for (const statement of statements) {
+    await pool.query(statement);
+  }
 }
