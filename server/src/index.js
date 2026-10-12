@@ -8,6 +8,7 @@ import express from "express";
 import multer from "multer";
 import { ensureAdmin, loginAdmin, requireAdmin } from "./auth.js";
 import { createPool, migrate, query } from "./db.js";
+import { deleteResume, isCloudResume, openResume, saveResume } from "./resumes.js";
 
 const serverRoot = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -48,16 +49,26 @@ function rateLimit(max, windowMs) {
   };
 }
 
+const RESUME_TYPES = {
+  ".pdf": "application/pdf",
+  ".doc": "application/msword",
+  ".docx":
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+};
+
 export function createApp(pool, uploadDir) {
+  const resumeBucket = process.env.RESUME_BUCKET || "";
   fs.mkdirSync(uploadDir, { recursive: true });
   const upload = multer({
-    storage: multer.diskStorage({
-      destination: uploadDir,
-      filename: (_req, file, callback) => {
-        const ext = path.extname(file.originalname).toLowerCase();
-        callback(null, `${crypto.randomUUID()}${ext}`);
-      },
-    }),
+    storage: resumeBucket
+      ? multer.memoryStorage()
+      : multer.diskStorage({
+          destination: uploadDir,
+          filename: (_req, file, callback) => {
+            const ext = path.extname(file.originalname).toLowerCase();
+            callback(null, `${crypto.randomUUID()}${ext}`);
+          },
+        }),
     limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (_req, file, callback) => {
       const ext = path.extname(file.originalname).toLowerCase();
@@ -198,36 +209,53 @@ export function createApp(pool, uploadDir) {
           phone.length > 40 ||
           !req.file
         ) {
-          if (req.file) await fs.promises.unlink(req.file.path).catch(() => {});
+          if (req.file?.path) await fs.promises.unlink(req.file.path).catch(() => {});
           return res.status(400).json({
             error: "Name, email, experience, resume, and a short note are required",
           });
         }
         const id = crypto.randomUUID();
-        await query(
-          pool,
-          `INSERT INTO job_applications (
-             id, role_id, role_title, full_name, email, phone, linkedin_url,
-             experience, github_url, why_join, resume_filename, resume_stored_name
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            id,
-            roleId,
-            roleTitle,
-            fullName,
-            email,
-            phone,
-            linkedinUrl,
-            experience,
-            githubUrl,
-            whyJoin,
-            path.basename(req.file.originalname),
-            req.file.filename,
-          ],
-        );
+        const ext = path.extname(req.file.originalname).toLowerCase();
+        const storedName = resumeBucket
+          ? `resumes/${crypto.randomUUID()}${ext}`
+          : req.file.filename;
+        if (resumeBucket) {
+          await saveResume(
+            resumeBucket,
+            storedName,
+            req.file.buffer,
+            RESUME_TYPES[ext] || "application/octet-stream",
+          );
+        }
+        try {
+          await query(
+            pool,
+            `INSERT INTO job_applications (
+               id, role_id, role_title, full_name, email, phone, linkedin_url,
+               experience, github_url, why_join, resume_filename, resume_stored_name
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              id,
+              roleId,
+              roleTitle,
+              fullName,
+              email,
+              phone,
+              linkedinUrl,
+              experience,
+              githubUrl,
+              whyJoin,
+              path.basename(req.file.originalname),
+              storedName,
+            ],
+          );
+        } catch (error) {
+          if (resumeBucket) await deleteResume(resumeBucket, storedName);
+          throw error;
+        }
         return res.status(201).json({ ok: true, id });
       } catch (error) {
-        if (req.file) await fs.promises.unlink(req.file.path).catch(() => {});
+        if (req.file?.path) await fs.promises.unlink(req.file.path).catch(() => {});
         return next(error);
       }
     },
@@ -317,12 +345,23 @@ export function createApp(pool, uploadDir) {
       );
       const row = rows[0];
       if (!row) return res.status(404).json({ error: "Application not found" });
+      const downloadName = path.basename(row.resume_filename).replace(/[\r\n"]/g, "");
+      if (isCloudResume(row.resume_stored_name)) {
+        const stream = await openResume(resumeBucket, row.resume_stored_name);
+        if (!stream) return res.status(404).json({ error: "Resume file not found" });
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="${downloadName}"`,
+        );
+        stream.on("error", next);
+        return stream.pipe(res);
+      }
       const stored = path.basename(row.resume_stored_name);
       const filePath = path.join(uploadDir, stored);
       if (!fs.existsSync(filePath)) {
         return res.status(404).json({ error: "Resume file not found" });
       }
-      return res.download(filePath, row.resume_filename);
+      return res.download(filePath, downloadName);
     } catch (error) {
       return next(error);
     }
