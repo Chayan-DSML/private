@@ -328,6 +328,17 @@ export function createApp(pool, uploadDir) {
     }
   });
 
+  const distDir = process.env.STATIC_DIR
+    ? path.resolve(process.env.STATIC_DIR)
+    : path.resolve(serverRoot, "../dist");
+  if (fs.existsSync(path.join(distDir, "index.html"))) {
+    app.use(express.static(distDir));
+    app.get("*", (req, res, next) => {
+      if (req.path.startsWith("/api")) return next();
+      res.sendFile(path.join(distDir, "index.html"));
+    });
+  }
+
   app.use((error, _req, res, _next) => {
     if (error instanceof multer.MulterError && error.code === "LIMIT_FILE_SIZE") {
       return res.status(400).json({ error: "Resume must be 5MB or smaller" });

@@ -18,16 +18,21 @@ export function createPool() {
       "DATABASE_USER, DATABASE_PASSWORD, and DATABASE_NAME are required",
     );
   }
-  return mysql.createPool({
-    host: process.env.DATABASE_HOST || "127.0.0.1",
-    port: Number(process.env.DATABASE_PORT || 3306),
+  const config = {
     user,
     password,
     database,
     waitForConnections: true,
     connectionLimit: 10,
     timezone: "Z",
-  });
+  };
+  if (process.env.DATABASE_SOCKET) {
+    config.socketPath = process.env.DATABASE_SOCKET;
+  } else {
+    config.host = process.env.DATABASE_HOST || "127.0.0.1";
+    config.port = Number(process.env.DATABASE_PORT || 3306);
+  }
+  return mysql.createPool(config);
 }
 
 export async function query(pool, sql, params = []) {
