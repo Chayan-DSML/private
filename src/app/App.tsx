@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import logoImg from "../imports/image.png";
 import {
   Menu,
@@ -214,20 +214,40 @@ export default function App() {
   const [ideaError, setIdeaError] = useState("");
   const [ideaPending, setIdeaPending] = useState(false);
 
-  const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-    }
-  };
+  const sectionTarget = useRef<string | null>(null);
 
   const navigateTo = (page: Page, section?: string) => {
-    setCurrentPage(page);
+    sectionTarget.current = section ?? null;
     setMobileMenuOpen(false);
-    setTimeout(() => {
-      if (section) scrollToSection(section);
-    }, 100);
+    if (page === currentPage) {
+      if (section) {
+        document.getElementById(section)?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      } else {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      sectionTarget.current = null;
+      return;
+    }
+    setCurrentPage(page);
   };
+
+  useEffect(() => {
+    const section = sectionTarget.current;
+    sectionTarget.current = null;
+    if (section) {
+      const frame = requestAnimationFrame(() => {
+        document.getElementById(section)?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      });
+      return () => cancelAnimationFrame(frame);
+    }
+    window.scrollTo(0, 0);
+  }, [currentPage]);
 
   // Animate waitlist counter on mount
   useEffect(() => {
@@ -339,7 +359,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen overflow-x-hidden bg-gradient-to-b from-gray-50 to-white">
       {/* Navigation */}
       <nav className="sticky top-0 z-40 w-full border-b border-slate-100/50 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 md:px-12">
@@ -471,38 +491,38 @@ export default function App() {
         {currentPage === "home" && (
           <div className="animate-in fade-in duration-500">
             {/* Hero Section */}
-            <div className="mx-auto mb-20 max-w-7xl px-4 pt-6 md:px-8">
-              <div className="relative h-[600px] overflow-hidden rounded-[2.5rem] shadow-2xl md:h-[700px]">
+            <div className="mx-auto mb-12 max-w-7xl px-4 pt-4 md:mb-20 md:px-8 md:pt-6">
+              <div className="relative overflow-hidden rounded-3xl shadow-2xl md:h-[700px] md:rounded-[2.5rem]">
                 <img
                   src="https://images.unsplash.com/photo-1537996194471-e657df975ab4?q=80&w=2838&auto=format&fit=crop"
                   alt="Bali Temple"
                   className="absolute inset-0 h-full w-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent"></div>
-                <div className="absolute inset-0 flex flex-col justify-center px-8 text-white md:px-16 max-w-3xl">
+                <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/55 to-black/75 md:bg-gradient-to-r md:from-black/70 md:via-black/40 md:to-transparent"></div>
+                <div className="relative flex flex-col justify-center px-5 py-8 text-white sm:px-8 md:absolute md:inset-0 md:max-w-3xl md:px-16 md:py-0">
                   <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider backdrop-blur-md">
                     <Sparkles className="h-3 w-3 text-teal-300" />{" "}
                     AI-Optimized Travel
                   </div>
-                  <h1 className="mb-6 text-5xl font-bold leading-tight md:text-7xl">
+                  <h1 className="mb-4 text-3xl font-bold leading-tight sm:text-4xl md:mb-6 md:text-7xl">
                     Tour Bhook: The Smart Way to{" "}
                     <span className="bg-gradient-to-r from-teal-300 to-emerald-300 bg-clip-text text-transparent">
                       Explore the World
                     </span>
                   </h1>
-                  <p className="mb-10 max-w-2xl text-lg text-gray-100 md:text-xl">
+                  <p className="mb-6 max-w-2xl text-base text-gray-100 sm:text-lg md:mb-10 md:text-xl">
                     Minimize planning time and maximize
                     discovery. We use intelligent routing to
                     build your perfect journey.
                   </p>
 
                   {/* App Store Buttons */}
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                     <a
                       href="https://play.google.com/store"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group flex items-center gap-3 rounded-2xl bg-black px-6 py-3.5 transition-all hover:scale-105 hover:bg-gray-900"
+                      className="group flex w-full items-center gap-3 rounded-2xl bg-black px-5 py-3 transition-all hover:bg-gray-900 sm:w-auto sm:px-6 sm:py-3.5 sm:hover:scale-105"
                     >
                       <svg
                         className="h-8 w-8"
@@ -540,7 +560,7 @@ export default function App() {
                       href="https://apps.apple.com"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group flex items-center gap-3 rounded-2xl bg-black px-6 py-3.5 transition-all hover:scale-105 hover:bg-gray-900"
+                      className="group flex w-full items-center gap-3 rounded-2xl bg-black px-5 py-3 transition-all hover:bg-gray-900 sm:w-auto sm:px-6 sm:py-3.5 sm:hover:scale-105"
                     >
                       <svg
                         className="h-8 w-8"
@@ -561,10 +581,10 @@ export default function App() {
                   </div>
 
                   {/* Waitlist Counter */}
-                  <div className="mt-8">
-                    <div className="flex items-center gap-3 rounded-2xl bg-white/10 px-5 py-3 backdrop-blur-md border border-white/20 w-fit">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-500/20">
-                        <span className="text-lg font-bold text-white">
+                  <div className="mt-6">
+                    <div className="flex w-full items-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 backdrop-blur-md sm:w-fit sm:px-5">
+                      <div className="flex h-12 min-w-12 items-center justify-center rounded-full bg-teal-500/20 px-2">
+                        <span className="text-sm font-bold text-white">
                           {(waitlistCount / 1000).toFixed(1)}k+
                         </span>
                       </div>
@@ -720,7 +740,7 @@ export default function App() {
                   {/* Phone Mockup 1 */}
                   <div className="group relative">
                     <div className="absolute -inset-1 rounded-[3rem] bg-gradient-to-r from-teal-500 to-emerald-500 opacity-75 blur-xl transition duration-1000 group-hover:opacity-100"></div>
-                    <div className="relative h-[600px] w-[280px] overflow-hidden rounded-[3rem] border-8 border-slate-900 bg-white shadow-2xl">
+                    <div className="relative h-[520px] w-full max-w-[280px] overflow-hidden rounded-[3rem] border-8 border-slate-900 bg-white shadow-2xl sm:h-[600px]">
                       <div className="flex h-full flex-col bg-gradient-to-b from-teal-50 to-white p-6">
                         <div className="mb-6 text-center">
                           <h3 className="text-2xl font-bold text-slate-900">
@@ -796,7 +816,7 @@ export default function App() {
                   {/* Phone Mockup 2 */}
                   <div className="group relative">
                     <div className="absolute -inset-1 rounded-[3rem] bg-gradient-to-r from-violet-500 to-purple-500 opacity-75 blur-xl transition duration-1000 group-hover:opacity-100"></div>
-                    <div className="relative h-[600px] w-[280px] overflow-hidden rounded-[3rem] border-8 border-slate-900 bg-white shadow-2xl">
+                    <div className="relative h-[520px] w-full max-w-[280px] overflow-hidden rounded-[3rem] border-8 border-slate-900 bg-white shadow-2xl sm:h-[600px]">
                       <div className="flex h-full flex-col bg-gradient-to-b from-violet-50 to-white p-6">
                         <div className="mb-6 text-center">
                           <h3 className="text-2xl font-bold text-slate-900">
@@ -863,7 +883,7 @@ export default function App() {
             {/* Services */}
             <div
               id="services"
-              className="bg-gradient-to-b from-white to-slate-50 py-20"
+              className="scroll-mt-24 bg-gradient-to-b from-white to-slate-50 py-20"
             >
               <div className="mx-auto max-w-7xl px-6">
                 <div className="mb-16 text-center">
@@ -1054,7 +1074,7 @@ export default function App() {
             {/* Waitlist Form */}
             <div
               id="waitlist"
-              className="mx-auto flex max-w-7xl justify-center px-6 py-20"
+              className="scroll-mt-24 mx-auto flex max-w-7xl justify-center px-4 py-16 sm:px-6 sm:py-20"
             >
               <div className="w-full max-w-4xl rounded-[2rem] border border-slate-100 bg-white p-8 shadow-2xl md:p-12">
                 <div className="text-center">
@@ -1153,7 +1173,7 @@ export default function App() {
             {/* Contact Section */}
             <section
               id="contact"
-              className="border-t border-slate-100 bg-white py-20"
+              className="scroll-mt-24 border-t border-slate-100 bg-white py-20"
             >
               <div className="mx-auto max-w-7xl px-6">
                 <div className="flex flex-col gap-16 md:flex-row">
