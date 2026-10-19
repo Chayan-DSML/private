@@ -42,143 +42,24 @@ type Page =
   | "press"
   | "privacy";
 
-const JOBS = [
-  {
-    id: "senior-fullstack",
-    title: "Senior Full Stack Developer",
-    type: "Contract Role",
-    duration: "Contract · Flexible Hours",
-    location: "Remote",
-    department: "Engineering",
-    tagColor: "teal" as const,
-    badge: "Contract",
-    applyColor: "teal" as const,
-    about: `We're looking for an experienced full stack engineer to help architect and build the core Tour Bhook platform. You'll work directly with the founders, own entire features end-to-end, and make real technical decisions that shape how millions of travellers plan their trips.
+type Job = {
+  id: string;
+  title: string;
+  type: string;
+  duration: string;
+  location: string;
+  department: string;
+  tagColor: "teal" | "orange";
+  badge: string;
+  applyColor: "teal" | "orange";
+  about: string;
+  responsibilities: string[];
+  skills: string[];
+  niceToHave: string[];
+  benefits: { icon: string; title: string; desc: string }[];
+};
 
-This is a contract role with flexible hours — we care about output, not clock-watching. If you're someone who loves solving hard problems, writes clean code, and wants meaningful ownership, this is the role for you.`,
-    responsibilities: [
-      "Design and build scalable REST APIs and backend services",
-      "Develop responsive web interfaces using modern React",
-      "Collaborate with the product and design team to ship features fast",
-      "Set up and maintain CI/CD pipelines and cloud infrastructure",
-      "Review code, mentor junior engineers, and uphold engineering standards",
-      "Contribute to architectural decisions and technical roadmap",
-    ],
-    skills: [
-      "Node.js / Python backend development",
-      "React or Next.js for frontend",
-      "PostgreSQL or similar relational databases",
-      "REST API design and integration",
-      "Cloud platforms (AWS / GCP / Firebase)",
-      "Git and collaborative development workflows",
-    ],
-    niceToHave: [
-      "Experience with AI/ML API integrations (OpenAI, Google Maps, etc.)",
-      "Background in travel, maps, or geo-based applications",
-      "Familiarity with Flutter or mobile development",
-      "Open source contributions",
-    ],
-    benefits: [
-      {
-        icon: "💰",
-        title: "Competitive Contract Pay",
-        desc: "Market-rate compensation based on experience",
-      },
-      {
-        icon: "🌍",
-        title: "Fully Remote",
-        desc: "Work from anywhere — we are async-first",
-      },
-      {
-        icon: "⚡",
-        title: "Real Ownership",
-        desc: "Ship features that millions will use",
-      },
-      {
-        icon: "🚀",
-        title: "Early Stage Equity",
-        desc: "Potential for equity as the product grows",
-      },
-      {
-        icon: "🧠",
-        title: "Learn & Grow",
-        desc: "Access to tools, resources, and a sharp team",
-      },
-      {
-        icon: "🕐",
-        title: "Flexible Hours",
-        desc: "Output-driven, no micromanagement",
-      },
-    ],
-  },
-  {
-    id: "flutter-intern",
-    title: "Flutter Frontend Developer Intern",
-    type: "Internship · 2 Months",
-    duration: "Internship · 2 Months",
-    location: "Remote",
-    department: "Mobile",
-    tagColor: "orange" as const,
-    badge: "Internship",
-    applyColor: "orange" as const,
-    about: `A hands-on 2-month internship for a Flutter developer who wants real-world experience shipping a consumer mobile app. You won't be making tea or writing documentation — you'll be building actual screens that real users will interact with.
-
-You'll work under the guidance of our senior engineers, get code reviews, and leave with a project you're proud to show in your portfolio. This is the best way to fast-track your mobile development career.`,
-    responsibilities: [
-      "Build and polish Flutter screens following our design system",
-      "Integrate REST APIs to bring live data into the app",
-      "Work with state management (Provider / Riverpod / Bloc)",
-      "Collaborate with the design team to implement pixel-perfect UI",
-      "Fix bugs, improve performance, and write clean, readable code",
-      "Participate in daily standups and sprint planning",
-    ],
-    skills: [
-      "Flutter & Dart — at least one personal or academic project",
-      "Basic understanding of REST APIs and JSON",
-      "Familiarity with Git and version control",
-      "Eye for UI detail and clean interfaces",
-      "Eagerness to learn and take feedback well",
-    ],
-    niceToHave: [
-      "Published app on Play Store or App Store",
-      "Experience with Firebase (Auth, Firestore, FCM)",
-      "Knowledge of animations in Flutter",
-      "Passion for travel or consumer apps",
-    ],
-    benefits: [
-      {
-        icon: "🎓",
-        title: "Real Project Experience",
-        desc: "Ship code in a live product, not a sandbox",
-      },
-      {
-        icon: "🧑‍💻",
-        title: "Mentorship",
-        desc: "Regular code reviews and 1-on-1 guidance",
-      },
-      {
-        icon: "📜",
-        title: "Certificate & LOR",
-        desc: "Letter of recommendation upon completion",
-      },
-      {
-        icon: "🌍",
-        title: "Fully Remote",
-        desc: "Work from home, on your schedule",
-      },
-      {
-        icon: "💼",
-        title: "Portfolio Boost",
-        desc: "Real app to showcase to future employers",
-      },
-      {
-        icon: "🚀",
-        title: "Fast-Track Career",
-        desc: "Potential for a full-time role after internship",
-      },
-    ],
-  },
-];
+const JOBS: Job[] = [];
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>("home");
@@ -1356,7 +1237,7 @@ export default function App() {
                   }}
                   className="mt-10 inline-flex items-center gap-2 rounded-2xl bg-white px-8 py-4 font-bold text-slate-900 shadow-xl transition-all hover:scale-105 hover:shadow-2xl"
                 >
-                  View Open Roles{" "}
+                  Careers{" "}
                   <ArrowRight className="h-5 w-5" />
                 </button>
               </div>
@@ -1818,7 +1699,7 @@ export default function App() {
                   }}
                   className="inline-flex items-center gap-2 rounded-2xl bg-white px-10 py-4 font-bold text-slate-900 shadow-xl transition-all hover:scale-105 hover:shadow-2xl"
                 >
-                  See Open Roles{" "}
+                  Careers{" "}
                   <ArrowRight className="h-5 w-5" />
                 </button>
               </div>
@@ -1849,8 +1730,8 @@ export default function App() {
             <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900 px-6 py-24 text-center text-white">
               <div className="mx-auto max-w-3xl">
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-teal-300">
-                  <Building2 className="h-3.5 w-3.5" /> We're
-                  Hiring
+                  <Building2 className="h-3.5 w-3.5" /> Not
+                  hiring right now
                 </div>
                 <h1 className="mb-6 text-5xl font-bold leading-tight md:text-6xl">
                   Build the Future of{" "}
@@ -1859,9 +1740,8 @@ export default function App() {
                   </span>
                 </h1>
                 <p className="mx-auto max-w-2xl text-lg text-slate-300">
-                  Join a small, passionate team building
-                  something travellers will love. We move fast,
-                  think deeply, and care about craft.
+                  We are not hiring right now. New roles will
+                  appear here when we open them.
                 </p>
               </div>
             </div>
@@ -1873,8 +1753,12 @@ export default function App() {
                   Open Positions
                 </div>
                 <h2 className="text-4xl font-bold text-slate-900">
-                  2 Roles Available
+                  No open roles
                 </h2>
+                <p className="mx-auto mt-4 max-w-xl text-slate-500">
+                  We are not hiring right now. Roles will show
+                  up here when we start again.
+                </p>
               </div>
 
               <div className="space-y-6">
@@ -1948,8 +1832,8 @@ export default function App() {
             {/* Bottom CTA */}
             <div className="border-t border-slate-100 bg-gradient-to-b from-slate-50 to-white py-16 text-center">
               <p className="text-slate-500">
-                Click on any role above to view full details and
-                apply.
+                Applications are closed until a role is listed
+                here.
               </p>
             </div>
           </div>
