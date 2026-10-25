@@ -141,6 +141,30 @@ export function createApp(pool, uploadDir) {
     }
   });
 
+  app.post("/api/account-deletions", publicWrite, async (req, res, next) => {
+    try {
+      const email = text(req.body?.email, 320)?.toLowerCase();
+      const name = String(req.body?.name ?? "").trim();
+      const phone = String(req.body?.phone ?? "").trim();
+      const details = String(req.body?.details ?? "").trim();
+      if (!email || !EMAIL.test(email)) {
+        return res.status(400).json({ error: "Enter the email address on the account" });
+      }
+      if (name.length > 200 || phone.length > 40 || details.length > 2000) {
+        return res.status(400).json({ error: "One of the fields is too long" });
+      }
+      await query(
+        pool,
+        `INSERT INTO account_deletion_requests (id, email, name, phone, details)
+         VALUES (?, ?, ?, ?, ?)`,
+        [crypto.randomUUID(), email, name || null, phone || null, details || null],
+      );
+      return res.status(201).json({ ok: true });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
   app.post("/api/partners", publicWrite, async (req, res, next) => {
     try {
       const fullName = text(req.body?.fullName, 200);
@@ -370,6 +394,22 @@ export function createApp(pool, uploadDir) {
   const distDir = process.env.STATIC_DIR
     ? path.resolve(process.env.STATIC_DIR)
     : path.resolve(serverRoot, "../dist");
+  const sendLegalPage = (file) => (req, res, next) => {
+    const full = path.join(distDir, file);
+    if (!fs.existsSync(full)) return next();
+    res.setHeader("Cache-Control", "public, max-age=300");
+    res.type("html");
+    return res.sendFile(full);
+  };
+  app.get(
+    ["/privacy-policy", "/privacy-policy/"],
+    sendLegalPage("privacy-policy/index.html"),
+  );
+  app.get(
+    ["/delete-account", "/delete-account/"],
+    sendLegalPage("delete-account/index.html"),
+  );
+
   if (fs.existsSync(path.join(distDir, "index.html"))) {
     app.use(express.static(distDir));
     app.get("*", (req, res, next) => {

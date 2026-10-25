@@ -39,8 +39,7 @@ type Page =
   | "partner"
   | "job-detail"
   | "roadmap"
-  | "press"
-  | "privacy";
+  | "press";
 
 type Job = {
   id: string;
@@ -2827,72 +2826,8 @@ export default function App() {
           </div>
         )}
 
-        {/* Privacy Policy Page */}
-        {currentPage === "privacy" && (
-          <div className="animate-in fade-in duration-500">
-            <div className="border-b border-slate-100 bg-white px-6 py-16 text-center">
-              <h1 className="text-4xl font-bold text-slate-900 md:text-5xl">Privacy Policy</h1>
-              <p className="mt-3 text-slate-500">Last updated: September 2026</p>
-            </div>
-            <div className="mx-auto max-w-3xl px-6 py-16">
-              <div className="space-y-10">
-                {[
-                  {
-                    title: "1. Who We Are",
-                    body: "Tour Bhook is an AI-powered travel planning service operated by Pramahar Technologies ('we', 'us', 'our'). This Privacy Policy explains how we collect, use, and protect your personal information when you use our website or join our waitlist.",
-                  },
-                  {
-                    title: "2. Information We Collect",
-                    body: "We collect information you provide directly — such as your email address when joining the waitlist, your name and contact details when applying for a job or partner role, and messages you send through our contact form. We may also collect basic usage data (pages visited, time on site) through analytics tools to improve the experience.",
-                  },
-                  {
-                    title: "3. How We Use Your Information",
-                    body: "We use your email address to send you updates about Tour Bhook's launch, early access invitations, and product news. We use contact form submissions to respond to your enquiries. We use job and partner applications to evaluate your suitability for roles. We never sell your personal data to third parties.",
-                  },
-                  {
-                    title: "4. Data Storage & Security",
-                    body: "Your data is stored securely using industry-standard encryption. We use reputable third-party service providers for email delivery and form handling, all of whom are contractually bound to protect your data. We retain waitlist data until the app launches or you request deletion, whichever comes first.",
-                  },
-                  {
-                    title: "5. Your Rights",
-                    body: "You have the right to access, correct, or delete your personal data at any time. To exercise these rights, email us at hello.tourbhook@gmail.com. You may also unsubscribe from our mailing list at any time by clicking 'Unsubscribe' in any email we send you.",
-                  },
-                  {
-                    title: "6. Cookies",
-                    body: "We use minimal cookies to ensure the website functions correctly and to understand how visitors interact with the site. We do not use advertising cookies or track you across other websites. You can disable cookies in your browser settings, though this may affect some functionality.",
-                  },
-                  {
-                    title: "7. Third-Party Links",
-                    body: "Our website may link to external services such as Google Play Store, Apple App Store, Instagram, and Twitter. We are not responsible for the privacy practices of these third parties and encourage you to review their respective privacy policies.",
-                  },
-                  {
-                    title: "8. Children's Privacy",
-                    body: "Tour Bhook is not directed at children under the age of 13. We do not knowingly collect personal information from children. If you believe a child has submitted data to us, please contact us and we will delete it promptly.",
-                  },
-                  {
-                    title: "9. Changes to This Policy",
-                    body: "We may update this Privacy Policy from time to time. When we do, we will update the 'Last updated' date at the top. Continued use of the site after changes are posted constitutes your acceptance of the revised policy.",
-                  },
-                  {
-                    title: "10. Contact Us",
-                    body: "For any privacy-related questions or requests, contact us at hello.tourbhook@gmail.com. We aim to respond within 5 business days.",
-                  },
-                ].map((section, i) => (
-                  <div key={i} className="border-b border-slate-100 pb-8 last:border-0">
-                    <h2 className="mb-3 text-xl font-bold text-slate-900">{section.title}</h2>
-                    <p className="leading-relaxed text-slate-600">{section.body}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-12 rounded-2xl border border-teal-100 bg-teal-50 p-6 text-center">
-                <p className="text-sm text-teal-800">Questions about your data? <a href="mailto:hello.tourbhook@gmail.com" className="font-semibold underline">hello.tourbhook@gmail.com</a></p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* 404 Fallback */}
-        {!["home","about","crewbhook","careers","partner","job-detail","roadmap","press","privacy"].includes(currentPage) && (
+        {!["home","about","crewbhook","careers","partner","job-detail","roadmap","press"].includes(currentPage) && (
           <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center animate-in fade-in duration-500">
             <div className="mb-6 text-7xl">🗺️</div>
             <h1 className="mb-3 text-4xl font-bold text-slate-900">Page not found</h1>
@@ -3009,9 +2944,12 @@ export default function App() {
               >
                 Terms
               </button>
-              <button onClick={() => { navigateTo("privacy"); window.scrollTo(0,0); }} className="hover:text-slate-900">
+              <a href="/privacy-policy" className="hover:text-slate-900">
                 Privacy
-              </button>
+              </a>
+              <a href="/delete-account" className="hover:text-slate-900">
+                Delete account
+              </a>
             </div>
           </div>
         </div>
@@ -3026,9 +2964,9 @@ export default function App() {
             <button onClick={() => setCookieDismissed(true)} className="rounded-xl bg-slate-900 px-5 py-2 text-sm font-bold text-white transition hover:bg-slate-700">
               Got it
             </button>
-            <button onClick={() => { navigateTo("privacy"); setCookieDismissed(true); }} className="text-sm text-slate-400 underline transition hover:text-slate-600">
+            <a href="/privacy-policy" className="text-sm text-slate-400 underline transition hover:text-slate-600">
               Privacy Policy
-            </button>
+            </a>
           </div>
         </div>
       )}
