@@ -399,7 +399,7 @@ export default function App() {
                   {/* App Store Buttons */}
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                     <a
-                      href="https://play.google.com/store"
+                      href="https://play.google.com/store/apps/details?id=com.tourbhookmobile"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="group flex w-full items-center gap-3 rounded-2xl bg-black px-5 py-3 transition-all hover:bg-gray-900 sm:w-auto sm:px-6 sm:py-3.5 sm:hover:scale-105"
@@ -1023,9 +1023,9 @@ export default function App() {
             {/* App Store Pre-registration */}
             <div className="bg-slate-900 px-6 py-20">
               <div className="mx-auto max-w-3xl text-center">
-                <div className="mb-4 text-xs font-bold uppercase tracking-widest text-teal-400">Coming Soon</div>
+                <div className="mb-4 text-xs font-bold uppercase tracking-widest text-teal-400">Download</div>
                 <h2 className="mb-4 text-4xl font-bold text-white">Available on iOS & Android</h2>
-                <p className="mb-10 text-slate-400">The app is in final development. Pre-register on your platform to get notified the moment it drops — and jump the queue.</p>
+                <p className="mb-10 text-slate-400">TourBhook is on Google Play. The iOS app is still on the way.</p>
                 <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
                   <a href="#" onClick={(e) => e.preventDefault()} className="flex w-full items-center justify-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-8 py-4 text-white backdrop-blur transition hover:bg-white/20 sm:w-auto">
                     <svg className="h-7 w-7 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -1036,17 +1036,17 @@ export default function App() {
                       <div className="font-bold">App Store</div>
                     </div>
                   </a>
-                  <a href="#" onClick={(e) => e.preventDefault()} className="flex w-full items-center justify-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-8 py-4 text-white backdrop-blur transition hover:bg-white/20 sm:w-auto">
+                  <a href="https://play.google.com/store/apps/details?id=com.tourbhookmobile" target="_blank" rel="noopener noreferrer" className="flex w-full items-center justify-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-8 py-4 text-white backdrop-blur transition hover:bg-white/20 sm:w-auto">
                     <svg className="h-7 w-7 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M3.18 23.76c.3.17.65.19.98.07l12.06-6.97-2.55-2.55-10.49 9.45zm-1.81-20.5c-.1.27-.15.56-.15.87v19.74c0 .31.05.6.15.87l.09.08 11.05-11.04v-.27L1.46 3.18l-.09.08zM21.37 10.44l-2.62-1.51-2.88 2.88 2.88 2.88 2.64-1.53c.76-.44.76-1.27-.02-1.72zm-18.19 12.5l10.49-9.45-2.55-2.55-7.94 12z"/>
                     </svg>
                     <div className="text-left">
-                      <div className="text-xs text-slate-400">Pre-register on</div>
+                      <div className="text-xs text-slate-400">Get it on</div>
                       <div className="font-bold">Google Play</div>
                     </div>
                   </a>
                 </div>
-                <p className="mt-6 text-xs text-slate-500">Links will go live when store listings are approved. Join the waitlist above to get notified first.</p>
+                <p className="mt-6 text-xs text-slate-500">The iOS listing will be added when it is approved.</p>
               </div>
             </div>
 
