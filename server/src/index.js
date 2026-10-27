@@ -17,6 +17,12 @@ const serverRoot = path.join(
 dotenv.config({ path: path.join(serverRoot, ".env") });
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const CEO_TOPICS = new Set([
+  "Product improvement",
+  "New feature",
+  "Customer support",
+  "Something else",
+]);
 const hits = new Map();
 
 function text(value, max) {
@@ -136,6 +142,36 @@ export function createApp(pool, uploadDir) {
         [id, name, email, message],
       );
       return res.status(201).json({ ok: true, id });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.post("/api/ceo-feedback", publicWrite, async (req, res, next) => {
+    try {
+      const name = String(req.body?.name ?? "").trim();
+      const email = text(req.body?.email, 320)?.toLowerCase();
+      const topic = String(req.body?.topic ?? "").trim();
+      const message = text(req.body?.message, 5000);
+      if (name.length > 200) {
+        return res.status(400).json({ error: "Name is too long" });
+      }
+      if (!email || !EMAIL.test(email)) {
+        return res.status(400).json({ error: "Enter a valid email address" });
+      }
+      if (topic && !CEO_TOPICS.has(topic)) {
+        return res.status(400).json({ error: "Choose a topic from the list" });
+      }
+      if (!message) {
+        return res.status(400).json({ error: "Write your feedback or suggestion" });
+      }
+      await query(
+        pool,
+        `INSERT INTO ceo_office_messages (id, name, email, topic, message)
+         VALUES (?, ?, ?, ?, ?)`,
+        [crypto.randomUUID(), name || null, email, topic || null, message],
+      );
+      return res.status(201).json({ ok: true });
     } catch (error) {
       return next(error);
     }
@@ -302,6 +338,19 @@ export function createApp(pool, uploadDir) {
       const items = await query(
         pool,
         "SELECT id, email, created_at FROM waitlist_signups ORDER BY created_at DESC",
+      );
+      res.json({ items });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/admin/ceo-feedback", requireAdmin, async (_req, res, next) => {
+    try {
+      const items = await query(
+        pool,
+        `SELECT id, name, email, topic, message, created_at
+         FROM ceo_office_messages ORDER BY created_at DESC`,
       );
       res.json({ items });
     } catch (error) {

@@ -36,6 +36,7 @@
       .ok { background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 16px; padding: 16px 18px; }
       .err { color: #b91c1c; margin: 0; }
       .optional { font-weight: 400; color: #64748b; }
+      .mail-btn { display: inline-flex; align-items: center; background: #0f766e; color: #fff !important; text-decoration: none; font-weight: 700; border-radius: 999px; padding: 8px 14px; }
     </style>
   </head>
   <body>
@@ -57,8 +58,9 @@
         <ol>
           <li>If the TourBhook app shows a delete-account option in account settings, you can use that.</li>
           <li>If it does not, submit the form on this page. This is the web request we use when deletion is not completed inside the app.</li>
-          <li>Or email <a href="mailto:hello.tourbhook@gmail.com?subject=Account%20deletion%20request">hello.tourbhook@gmail.com</a> with the subject “Account deletion request”, the email address or phone number on the account, and the words “Please delete my TourBhook account”.</li>
+          <li>Or use the button below. It opens the mail app on this device with the subject “Account deletion request”. Include the email address or phone number on the account, and the words “Please delete my TourBhook account”.</li>
         </ol>
+        <p><a class="mail-btn" href="mailto:info@tourbhook.com?subject=Account%20deletion%20request">Email a deletion request</a></p>
         <p>We may reply to that email or phone number to confirm you control it before we delete the account.</p>
       </section>
 

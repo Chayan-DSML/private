@@ -39,7 +39,30 @@ type Page =
   | "partner"
   | "job-detail"
   | "roadmap"
-  | "press";
+  | "press"
+  | "ceo";
+
+const OFFICE_MAILTO = "mailto:info@tourbhook.com";
+
+function EmailOfficeButton({
+  label,
+  className,
+  subject,
+}: {
+  label: string;
+  className: string;
+  subject?: string;
+}) {
+  const href = subject
+    ? `${OFFICE_MAILTO}?subject=${encodeURIComponent(subject)}`
+    : OFFICE_MAILTO;
+  return (
+    <a href={href} className={className}>
+      <Mail className="h-4 w-4" />
+      {label}
+    </a>
+  );
+}
 
 type Job = {
   id: string;
@@ -93,6 +116,9 @@ export default function App() {
   const [partnerPending, setPartnerPending] = useState(false);
   const [ideaError, setIdeaError] = useState("");
   const [ideaPending, setIdeaPending] = useState(false);
+  const [ceoSubmitted, setCeoSubmitted] = useState(false);
+  const [ceoError, setCeoError] = useState("");
+  const [ceoPending, setCeoPending] = useState(false);
 
   const sectionTarget = useRef<string | null>(null);
 
@@ -223,6 +249,26 @@ export default function App() {
     }
   };
 
+  const handleCeoSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    setCeoError("");
+    setCeoPending(true);
+    try {
+      await postJson("/api/ceo-feedback", {
+        name: String(data.get("name") || ""),
+        email: String(data.get("email") || ""),
+        topic: String(data.get("topic") || ""),
+        message: String(data.get("message") || ""),
+      });
+      setCeoSubmitted(true);
+    } catch (err) {
+      setCeoError(err instanceof Error ? err.message : "Could not send that note");
+    } finally {
+      setCeoPending(false);
+    }
+  };
+
   const handleIdeaSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!wishlistIdea.trim()) return;
@@ -267,7 +313,7 @@ export default function App() {
             </div>
           </button>
 
-          <div className="hidden space-x-8 text-sm font-medium text-slate-500 md:flex">
+          <div className="hidden items-center gap-x-5 text-sm font-medium text-slate-500 lg:flex">
             <button
               onClick={() => navigateTo("home")}
               className={`transition-colors hover:text-slate-900 ${currentPage === "home" ? "font-semibold text-slate-900" : ""}`}
@@ -294,6 +340,12 @@ export default function App() {
               Partner
             </button>
             <button
+              onClick={() => navigateTo("ceo")}
+              className={`transition-colors hover:text-slate-900 ${currentPage === "ceo" ? "font-semibold text-slate-900" : ""}`}
+            >
+              CEO's Office
+            </button>
+            <button
               onClick={() => navigateTo("home", "contact")}
               className="transition-colors hover:text-slate-900"
             >
@@ -309,7 +361,7 @@ export default function App() {
 
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden text-slate-900"
+            className="text-slate-900 lg:hidden"
           >
             <Menu className="h-6 w-6" />
           </button>
@@ -317,7 +369,7 @@ export default function App() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-slate-100 bg-white px-4 py-6 shadow-lg">
+          <div className="border-t border-slate-100 bg-white px-4 py-6 shadow-lg lg:hidden">
             <div className="flex flex-col space-y-4">
               <button
                 onClick={() => navigateTo("home")}
@@ -342,6 +394,12 @@ export default function App() {
                 className={`text-left font-medium ${currentPage === "crewbhook" || currentPage === "careers" || currentPage === "job-detail" ? "text-teal-600" : "text-slate-600"}`}
               >
                 crewBhook
+              </button>
+              <button
+                onClick={() => navigateTo("ceo")}
+                className={`text-left font-medium ${currentPage === "ceo" ? "text-teal-600" : "text-slate-600"}`}
+              >
+                CEO's Office
               </button>
               <button
                 onClick={() => navigateTo("home", "contact")}
@@ -1065,12 +1123,10 @@ export default function App() {
                       Have questions? We'd love to hear from
                       you.
                     </p>
-                    <div className="flex items-center justify-center gap-4 md:justify-start">
-                      <Mail className="text-teal-600" />
-                      <span className="text-slate-700">
-                        hello.tourbhook@gmail.com
-                      </span>
-                    </div>
+                    <EmailOfficeButton
+                      label="Email us"
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-teal-600 px-5 py-2.5 font-semibold text-white shadow-lg shadow-teal-500/20 transition hover:bg-teal-700"
+                    />
                   </div>
                   <div className="md:w-7/12">
                     <div className="rounded-2xl border border-slate-100 bg-gray-50 p-8">
@@ -2756,9 +2812,10 @@ export default function App() {
                 </div>
                 <h1 className="mb-4 text-5xl font-bold text-slate-900 md:text-6xl">Media Kit</h1>
                 <p className="text-lg text-slate-500">Everything you need to cover Tour Bhook. For press enquiries, email us directly.</p>
-                <a href="mailto:info@tourbhook.com" className="mt-6 inline-flex items-center gap-2 rounded-full border border-slate-200 px-5 py-2 text-sm font-medium text-slate-700 transition hover:border-teal-300 hover:text-teal-600">
-                  <Mail className="h-4 w-4" /> info@tourbhook.com
-                </a>
+                <EmailOfficeButton
+                  label="Email us"
+                  className="mt-6 inline-flex items-center gap-2 rounded-full border border-slate-200 px-5 py-2 text-sm font-medium text-slate-700 transition hover:border-teal-300 hover:text-teal-600"
+                />
               </div>
             </div>
 
@@ -2818,16 +2875,125 @@ export default function App() {
               <div className="rounded-3xl bg-slate-900 p-8 text-center text-white md:p-10">
                 <h2 className="mb-3 text-2xl font-bold">Press Enquiries</h2>
                 <p className="mb-6 text-slate-400">For interviews, features, or media requests, reach out directly. We typically respond within 24 hours.</p>
-                <a href="mailto:info@tourbhook.com" className="inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-3 font-bold text-slate-900 transition hover:bg-slate-100">
-                  <Mail className="h-4 w-4" /> info@tourbhook.com
-                </a>
+                <EmailOfficeButton
+                  label="Email us"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-3 font-bold text-slate-900 transition hover:bg-slate-100"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {currentPage === "ceo" && (
+          <div className="animate-in fade-in duration-500">
+            <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900 px-6 py-20 text-white">
+              <div className="mx-auto max-w-3xl text-center">
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-teal-300">
+                  <MessageSquare className="h-3.5 w-3.5" /> CEO's Office
+                </div>
+                <h1 className="mb-4 text-4xl font-bold md:text-6xl">Write directly to the CEO's Office</h1>
+                <p className="text-lg text-slate-300">
+                  Product improvements, a feature you want, a note for customer support, or anything else. It goes only to the CEO's Office.
+                </p>
+              </div>
+            </div>
+            <div className="mx-auto max-w-3xl px-6 py-16">
+              <div className="mb-8 rounded-2xl border border-teal-100 bg-teal-50 px-5 py-4 text-sm text-teal-900">
+                Other visitors cannot see what you send. There is no public list of these notes.
+              </div>
+              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-10">
+                {ceoSubmitted ? (
+                  <div className="py-10 text-center">
+                    <CheckCircle className="mx-auto mb-4 h-12 w-12 text-teal-500" />
+                    <h2 className="mb-2 text-2xl font-bold text-slate-900">Sent to the CEO's Office</h2>
+                    <p className="text-slate-500">
+                      Thank you. This note is private and is not shown to anyone else on the site.
+                    </p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleCeoSubmit} className="space-y-5">
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-700" htmlFor="ceo-name">
+                        Name <span className="font-normal text-slate-400">(optional)</span>
+                      </label>
+                      <input
+                        id="ceo-name"
+                        type="text"
+                        name="name"
+                        maxLength={200}
+                        placeholder="Your name"
+                        className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-700" htmlFor="ceo-email">
+                        Email
+                      </label>
+                      <input
+                        id="ceo-email"
+                        type="email"
+                        name="email"
+                        required
+                        maxLength={320}
+                        placeholder="So the office can reply"
+                        className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-700" htmlFor="ceo-topic">
+                        What is this about?
+                      </label>
+                      <select
+                        id="ceo-topic"
+                        name="topic"
+                        defaultValue="Something else"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      >
+                        <option>Product improvement</option>
+                        <option>New feature</option>
+                        <option>Customer support</option>
+                        <option>Something else</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-700" htmlFor="ceo-message">
+                        Your note
+                      </label>
+                      <textarea
+                        id="ceo-message"
+                        name="message"
+                        required
+                        rows={6}
+                        maxLength={5000}
+                        placeholder="Tell the CEO's Office whatever you want them to know."
+                        className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                    {ceoError ? <p className="text-sm text-red-600">{ceoError}</p> : null}
+                    <button
+                      type="submit"
+                      disabled={ceoPending}
+                      className="w-full rounded-xl bg-slate-900 py-3 font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {ceoPending ? "Sending..." : "Send to the CEO's Office"}
+                    </button>
+                  </form>
+                )}
+              </div>
+              <div className="mt-8 text-center">
+                <p className="mb-3 text-sm text-slate-500">Prefer the mail app on this device?</p>
+                <EmailOfficeButton
+                  label="Email us"
+                  subject="Note for the CEO's Office"
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-600"
+                />
               </div>
             </div>
           </div>
         )}
 
         {/* 404 Fallback */}
-        {!["home","about","crewbhook","careers","partner","job-detail","roadmap","press"].includes(currentPage) && (
+        {!["home","about","crewbhook","careers","partner","job-detail","roadmap","press","ceo"].includes(currentPage) && (
           <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center animate-in fade-in duration-500">
             <div className="mb-6 text-7xl">🗺️</div>
             <h1 className="mb-3 text-4xl font-bold text-slate-900">Page not found</h1>
@@ -2909,6 +3075,14 @@ export default function App() {
                     className="hover:text-teal-600"
                   >
                     Press &amp; Media
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigateTo("ceo")}
+                    className="hover:text-teal-600"
+                  >
+                    CEO's Office
                   </button>
                 </li>
               </ul>
@@ -2996,11 +3170,18 @@ export default function App() {
                   { title: "5. Third-Party Services", body: "The App may integrate with third-party services including mapping providers, booking platforms, and AI APIs. We are not responsible for the availability, accuracy, or content of third-party services." },
                   { title: "6. Limitation of Liability", body: "Tour Bhook and Pramahar Technologies shall not be liable for any indirect, incidental, or consequential damages arising from your use of the App, including travel disruptions, booking errors, or reliance on AI-generated itineraries." },
                   { title: "7. Changes to Terms", body: "We reserve the right to modify these Terms at any time. Continued use of the App after changes are posted constitutes your acceptance of the revised Terms." },
-                  { title: "8. Contact", body: "For any questions about these Terms, contact us at hello.tourbhook@gmail.com." },
+                  { title: "8. Contact", body: "For any questions about these Terms, use the button below. It opens the mail app on this device." },
                 ].map((section, i) => (
                   <div key={i}>
                     <div className="mb-1 font-semibold text-slate-800">{section.title}</div>
                     <p>{section.body}</p>
+                    {section.title.startsWith("8.") ? (
+                      <EmailOfficeButton
+                        label="Email us"
+                        subject="Terms question"
+                        className="mt-3 inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2 font-semibold text-white"
+                      />
+                    ) : null}
                   </div>
                 ))}
               </div>
