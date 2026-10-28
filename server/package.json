@@ -1,0 +1,21 @@
+{
+  "name": "tourbhook-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "test": "node --test test/api.test.js"
+  },
+  "dependencies": {
+    "@google-cloud/storage": "7.17.2",
+    "bcryptjs": "3.0.2",
+    "cors": "2.8.5",
+    "dotenv": "16.6.1",
+    "express": "4.21.2",
+    "jsonwebtoken": "9.0.2",
+    "multer": "2.0.2",
+    "mysql2": "3.15.3",
+    "nodemailer": "10.2.1"
+  }
+}

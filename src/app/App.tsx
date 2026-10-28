@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import logoImg from "../imports/image.png";
 import {
   Menu,
@@ -29,6 +29,7 @@ import {
   Newspaper,
   ExternalLink,
 } from "lucide-react";
+import { postForm, postJson } from "./api";
 
 type Page =
   | "home"
@@ -39,145 +40,48 @@ type Page =
   | "job-detail"
   | "roadmap"
   | "press"
-  | "privacy";
+  | "ceo";
 
-const JOBS = [
-  {
-    id: "senior-fullstack",
-    title: "Senior Full Stack Developer",
-    type: "Contract Role",
-    duration: "Contract · Flexible Hours",
-    location: "Remote",
-    department: "Engineering",
-    tagColor: "teal" as const,
-    badge: "Contract",
-    applyColor: "teal" as const,
-    about: `We're looking for an experienced full stack engineer to help architect and build the core Tour Bhook platform. You'll work directly with the founders, own entire features end-to-end, and make real technical decisions that shape how millions of travellers plan their trips.
+const OFFICE_MAILTO = "mailto:info@tourbhook.com";
 
-This is a contract role with flexible hours — we care about output, not clock-watching. If you're someone who loves solving hard problems, writes clean code, and wants meaningful ownership, this is the role for you.`,
-    responsibilities: [
-      "Design and build scalable REST APIs and backend services",
-      "Develop responsive web interfaces using modern React",
-      "Collaborate with the product and design team to ship features fast",
-      "Set up and maintain CI/CD pipelines and cloud infrastructure",
-      "Review code, mentor junior engineers, and uphold engineering standards",
-      "Contribute to architectural decisions and technical roadmap",
-    ],
-    skills: [
-      "Node.js / Python backend development",
-      "React or Next.js for frontend",
-      "PostgreSQL or similar relational databases",
-      "REST API design and integration",
-      "Cloud platforms (AWS / GCP / Firebase)",
-      "Git and collaborative development workflows",
-    ],
-    niceToHave: [
-      "Experience with AI/ML API integrations (OpenAI, Google Maps, etc.)",
-      "Background in travel, maps, or geo-based applications",
-      "Familiarity with Flutter or mobile development",
-      "Open source contributions",
-    ],
-    benefits: [
-      {
-        icon: "💰",
-        title: "Competitive Contract Pay",
-        desc: "Market-rate compensation based on experience",
-      },
-      {
-        icon: "🌍",
-        title: "Fully Remote",
-        desc: "Work from anywhere — we are async-first",
-      },
-      {
-        icon: "⚡",
-        title: "Real Ownership",
-        desc: "Ship features that millions will use",
-      },
-      {
-        icon: "🚀",
-        title: "Early Stage Equity",
-        desc: "Potential for equity as the product grows",
-      },
-      {
-        icon: "🧠",
-        title: "Learn & Grow",
-        desc: "Access to tools, resources, and a sharp team",
-      },
-      {
-        icon: "🕐",
-        title: "Flexible Hours",
-        desc: "Output-driven, no micromanagement",
-      },
-    ],
-  },
-  {
-    id: "flutter-intern",
-    title: "Flutter Frontend Developer Intern",
-    type: "Internship · 2 Months",
-    duration: "Internship · 2 Months",
-    location: "Remote",
-    department: "Mobile",
-    tagColor: "orange" as const,
-    badge: "Internship",
-    applyColor: "orange" as const,
-    about: `A hands-on 2-month internship for a Flutter developer who wants real-world experience shipping a consumer mobile app. You won't be making tea or writing documentation — you'll be building actual screens that real users will interact with.
+function EmailOfficeButton({
+  label,
+  className,
+  subject,
+}: {
+  label: string;
+  className: string;
+  subject?: string;
+}) {
+  const href = subject
+    ? `${OFFICE_MAILTO}?subject=${encodeURIComponent(subject)}`
+    : OFFICE_MAILTO;
+  return (
+    <a href={href} className={className}>
+      <Mail className="h-4 w-4" />
+      {label}
+    </a>
+  );
+}
 
-You'll work under the guidance of our senior engineers, get code reviews, and leave with a project you're proud to show in your portfolio. This is the best way to fast-track your mobile development career.`,
-    responsibilities: [
-      "Build and polish Flutter screens following our design system",
-      "Integrate REST APIs to bring live data into the app",
-      "Work with state management (Provider / Riverpod / Bloc)",
-      "Collaborate with the design team to implement pixel-perfect UI",
-      "Fix bugs, improve performance, and write clean, readable code",
-      "Participate in daily standups and sprint planning",
-    ],
-    skills: [
-      "Flutter & Dart — at least one personal or academic project",
-      "Basic understanding of REST APIs and JSON",
-      "Familiarity with Git and version control",
-      "Eye for UI detail and clean interfaces",
-      "Eagerness to learn and take feedback well",
-    ],
-    niceToHave: [
-      "Published app on Play Store or App Store",
-      "Experience with Firebase (Auth, Firestore, FCM)",
-      "Knowledge of animations in Flutter",
-      "Passion for travel or consumer apps",
-    ],
-    benefits: [
-      {
-        icon: "🎓",
-        title: "Real Project Experience",
-        desc: "Ship code in a live product, not a sandbox",
-      },
-      {
-        icon: "🧑‍💻",
-        title: "Mentorship",
-        desc: "Regular code reviews and 1-on-1 guidance",
-      },
-      {
-        icon: "📜",
-        title: "Certificate & LOR",
-        desc: "Letter of recommendation upon completion",
-      },
-      {
-        icon: "🌍",
-        title: "Fully Remote",
-        desc: "Work from home, on your schedule",
-      },
-      {
-        icon: "💼",
-        title: "Portfolio Boost",
-        desc: "Real app to showcase to future employers",
-      },
-      {
-        icon: "🚀",
-        title: "Fast-Track Career",
-        desc: "Potential for a full-time role after internship",
-      },
-    ],
-  },
-];
+type Job = {
+  id: string;
+  title: string;
+  type: string;
+  duration: string;
+  location: string;
+  department: string;
+  tagColor: "teal" | "orange";
+  badge: string;
+  applyColor: "teal" | "orange";
+  about: string;
+  responsibilities: string[];
+  skills: string[];
+  niceToHave: string[];
+  benefits: { icon: string; title: string; desc: string }[];
+};
+
+const JOBS: Job[] = [];
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>("home");
@@ -202,21 +106,54 @@ export default function App() {
   const [wishlistSubmitted, setWishlistSubmitted] = useState(false);
   const [wishlistIdea, setWishlistIdea] = useState("");
   const [cookieDismissed, setCookieDismissed] = useState(false);
+  const [waitlistError, setWaitlistError] = useState("");
+  const [waitlistPending, setWaitlistPending] = useState(false);
+  const [contactError, setContactError] = useState("");
+  const [contactPending, setContactPending] = useState(false);
+  const [applicationError, setApplicationError] = useState("");
+  const [applicationPending, setApplicationPending] = useState(false);
+  const [partnerError, setPartnerError] = useState("");
+  const [partnerPending, setPartnerPending] = useState(false);
+  const [ideaError, setIdeaError] = useState("");
+  const [ideaPending, setIdeaPending] = useState(false);
+  const [ceoSubmitted, setCeoSubmitted] = useState(false);
+  const [ceoError, setCeoError] = useState("");
+  const [ceoPending, setCeoPending] = useState(false);
 
-  const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-    }
-  };
+  const sectionTarget = useRef<string | null>(null);
 
   const navigateTo = (page: Page, section?: string) => {
-    setCurrentPage(page);
+    sectionTarget.current = section ?? null;
     setMobileMenuOpen(false);
-    setTimeout(() => {
-      if (section) scrollToSection(section);
-    }, 100);
+    if (page === currentPage) {
+      if (section) {
+        document.getElementById(section)?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      } else {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      sectionTarget.current = null;
+      return;
+    }
+    setCurrentPage(page);
   };
+
+  useEffect(() => {
+    const section = sectionTarget.current;
+    sectionTarget.current = null;
+    if (section) {
+      const frame = requestAnimationFrame(() => {
+        document.getElementById(section)?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      });
+      return () => cancelAnimationFrame(frame);
+    }
+    window.scrollTo(0, 0);
+  }, [currentPage]);
 
   // Animate waitlist counter on mount
   useEffect(() => {
@@ -239,23 +176,116 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  const handleWaitlistSubmit = (e: React.FormEvent) => {
+  const handleWaitlistSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setWaitlistSubmitted(true);
+    const email = String(new FormData(e.currentTarget).get("email") || "");
+    setWaitlistError("");
+    setWaitlistPending(true);
+    try {
+      await postJson("/api/waitlist", { email });
+      setWaitlistSubmitted(true);
+    } catch (err) {
+      setWaitlistError(err instanceof Error ? err.message : "Could not join the waitlist");
+    } finally {
+      setWaitlistPending(false);
+    }
   };
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setContactSubmitted(true);
+    const data = new FormData(e.currentTarget);
+    setContactError("");
+    setContactPending(true);
+    try {
+      await postJson("/api/contact", {
+        name: String(data.get("name") || ""),
+        email: String(data.get("email") || ""),
+        message: String(data.get("message") || ""),
+      });
+      setContactSubmitted(true);
+    } catch (err) {
+      setContactError(err instanceof Error ? err.message : "Could not send the message");
+    } finally {
+      setContactPending(false);
+    }
   };
 
-  const handleApplicationSubmit = (e: React.FormEvent) => {
+  const handleApplicationSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setApplicationSubmitted(true);
+    const job = JOBS.find((item) => item.id === activeJobId);
+    if (!job) return;
+    const data = new FormData(e.currentTarget);
+    data.set("roleId", job.id);
+    data.set("roleTitle", job.title);
+    setApplicationError("");
+    setApplicationPending(true);
+    try {
+      await postForm("/api/applications", data);
+      setApplicationSubmitted(true);
+    } catch (err) {
+      setApplicationError(err instanceof Error ? err.message : "Could not send the application");
+    } finally {
+      setApplicationPending(false);
+    }
+  };
+
+  const handlePartnerSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    setPartnerError("");
+    setPartnerPending(true);
+    try {
+      await postJson("/api/partners", {
+        fullName: String(data.get("fullName") || ""),
+        phone: String(data.get("phone") || ""),
+        experience: String(data.get("experience") || ""),
+        location: String(data.get("location") || ""),
+      });
+      setPartnerSubmitted(true);
+    } catch (err) {
+      setPartnerError(err instanceof Error ? err.message : "Could not send the application");
+    } finally {
+      setPartnerPending(false);
+    }
+  };
+
+  const handleCeoSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    setCeoError("");
+    setCeoPending(true);
+    try {
+      await postJson("/api/ceo-feedback", {
+        name: String(data.get("name") || ""),
+        email: String(data.get("email") || ""),
+        topic: String(data.get("topic") || ""),
+        message: String(data.get("message") || ""),
+      });
+      setCeoSubmitted(true);
+    } catch (err) {
+      setCeoError(err instanceof Error ? err.message : "Could not send that note");
+    } finally {
+      setCeoPending(false);
+    }
+  };
+
+  const handleIdeaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!wishlistIdea.trim()) return;
+    setIdeaError("");
+    setIdeaPending(true);
+    try {
+      await postJson("/api/ideas", { body: wishlistIdea.trim() });
+      setWishlistSubmitted(true);
+    } catch (err) {
+      setIdeaError(err instanceof Error ? err.message : "Could not save that idea");
+    } finally {
+      setIdeaPending(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen overflow-x-hidden bg-gradient-to-b from-gray-50 to-white">
       {/* Navigation */}
       <nav className="sticky top-0 z-40 w-full border-b border-slate-100/50 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 md:px-12">
@@ -283,7 +313,7 @@ export default function App() {
             </div>
           </button>
 
-          <div className="hidden space-x-8 text-sm font-medium text-slate-500 md:flex">
+          <div className="hidden items-center gap-x-5 text-sm font-medium text-slate-500 lg:flex">
             <button
               onClick={() => navigateTo("home")}
               className={`transition-colors hover:text-slate-900 ${currentPage === "home" ? "font-semibold text-slate-900" : ""}`}
@@ -310,6 +340,12 @@ export default function App() {
               Partner
             </button>
             <button
+              onClick={() => navigateTo("ceo")}
+              className={`transition-colors hover:text-slate-900 ${currentPage === "ceo" ? "font-semibold text-slate-900" : ""}`}
+            >
+              CEO's Office
+            </button>
+            <button
               onClick={() => navigateTo("home", "contact")}
               className="transition-colors hover:text-slate-900"
             >
@@ -325,7 +361,7 @@ export default function App() {
 
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden text-slate-900"
+            className="text-slate-900 lg:hidden"
           >
             <Menu className="h-6 w-6" />
           </button>
@@ -333,7 +369,7 @@ export default function App() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-slate-100 bg-white px-4 py-6 shadow-lg">
+          <div className="border-t border-slate-100 bg-white px-4 py-6 shadow-lg lg:hidden">
             <div className="flex flex-col space-y-4">
               <button
                 onClick={() => navigateTo("home")}
@@ -358,6 +394,12 @@ export default function App() {
                 className={`text-left font-medium ${currentPage === "crewbhook" || currentPage === "careers" || currentPage === "job-detail" ? "text-teal-600" : "text-slate-600"}`}
               >
                 crewBhook
+              </button>
+              <button
+                onClick={() => navigateTo("ceo")}
+                className={`text-left font-medium ${currentPage === "ceo" ? "text-teal-600" : "text-slate-600"}`}
+              >
+                CEO's Office
               </button>
               <button
                 onClick={() => navigateTo("home", "contact")}
@@ -387,38 +429,38 @@ export default function App() {
         {currentPage === "home" && (
           <div className="animate-in fade-in duration-500">
             {/* Hero Section */}
-            <div className="mx-auto mb-20 max-w-7xl px-4 pt-6 md:px-8">
-              <div className="relative h-[600px] overflow-hidden rounded-[2.5rem] shadow-2xl md:h-[700px]">
+            <div className="mx-auto mb-12 max-w-7xl px-4 pt-4 md:mb-20 md:px-8 md:pt-6">
+              <div className="relative overflow-hidden rounded-3xl shadow-2xl md:h-[700px] md:rounded-[2.5rem]">
                 <img
                   src="https://images.unsplash.com/photo-1537996194471-e657df975ab4?q=80&w=2838&auto=format&fit=crop"
                   alt="Bali Temple"
                   className="absolute inset-0 h-full w-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent"></div>
-                <div className="absolute inset-0 flex flex-col justify-center px-8 text-white md:px-16 max-w-3xl">
+                <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/55 to-black/75 md:bg-gradient-to-r md:from-black/70 md:via-black/40 md:to-transparent"></div>
+                <div className="relative flex flex-col justify-center px-5 py-8 text-white sm:px-8 md:absolute md:inset-0 md:max-w-3xl md:px-16 md:py-0">
                   <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider backdrop-blur-md">
                     <Sparkles className="h-3 w-3 text-teal-300" />{" "}
                     AI-Optimized Travel
                   </div>
-                  <h1 className="mb-6 text-5xl font-bold leading-tight md:text-7xl">
+                  <h1 className="mb-4 text-3xl font-bold leading-tight sm:text-4xl md:mb-6 md:text-7xl">
                     Tour Bhook: The Smart Way to{" "}
                     <span className="bg-gradient-to-r from-teal-300 to-emerald-300 bg-clip-text text-transparent">
                       Explore the World
                     </span>
                   </h1>
-                  <p className="mb-10 max-w-2xl text-lg text-gray-100 md:text-xl">
+                  <p className="mb-6 max-w-2xl text-base text-gray-100 sm:text-lg md:mb-10 md:text-xl">
                     Minimize planning time and maximize
                     discovery. We use intelligent routing to
                     build your perfect journey.
                   </p>
 
                   {/* App Store Buttons */}
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                     <a
-                      href="https://play.google.com/store"
+                      href="https://play.google.com/store/apps/details?id=com.tourbhookmobile"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group flex items-center gap-3 rounded-2xl bg-black px-6 py-3.5 transition-all hover:scale-105 hover:bg-gray-900"
+                      className="group flex w-full items-center gap-3 rounded-2xl bg-black px-5 py-3 transition-all hover:bg-gray-900 sm:w-auto sm:px-6 sm:py-3.5 sm:hover:scale-105"
                     >
                       <svg
                         className="h-8 w-8"
@@ -456,7 +498,7 @@ export default function App() {
                       href="https://apps.apple.com"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group flex items-center gap-3 rounded-2xl bg-black px-6 py-3.5 transition-all hover:scale-105 hover:bg-gray-900"
+                      className="group flex w-full items-center gap-3 rounded-2xl bg-black px-5 py-3 transition-all hover:bg-gray-900 sm:w-auto sm:px-6 sm:py-3.5 sm:hover:scale-105"
                     >
                       <svg
                         className="h-8 w-8"
@@ -477,10 +519,10 @@ export default function App() {
                   </div>
 
                   {/* Waitlist Counter */}
-                  <div className="mt-8">
-                    <div className="flex items-center gap-3 rounded-2xl bg-white/10 px-5 py-3 backdrop-blur-md border border-white/20 w-fit">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-500/20">
-                        <span className="text-lg font-bold text-white">
+                  <div className="mt-6">
+                    <div className="flex w-full items-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 backdrop-blur-md sm:w-fit sm:px-5">
+                      <div className="flex h-12 min-w-12 items-center justify-center rounded-full bg-teal-500/20 px-2">
+                        <span className="text-sm font-bold text-white">
                           {(waitlistCount / 1000).toFixed(1)}k+
                         </span>
                       </div>
@@ -636,7 +678,7 @@ export default function App() {
                   {/* Phone Mockup 1 */}
                   <div className="group relative">
                     <div className="absolute -inset-1 rounded-[3rem] bg-gradient-to-r from-teal-500 to-emerald-500 opacity-75 blur-xl transition duration-1000 group-hover:opacity-100"></div>
-                    <div className="relative h-[600px] w-[280px] overflow-hidden rounded-[3rem] border-8 border-slate-900 bg-white shadow-2xl">
+                    <div className="relative h-[520px] w-full max-w-[280px] overflow-hidden rounded-[3rem] border-8 border-slate-900 bg-white shadow-2xl sm:h-[600px]">
                       <div className="flex h-full flex-col bg-gradient-to-b from-teal-50 to-white p-6">
                         <div className="mb-6 text-center">
                           <h3 className="text-2xl font-bold text-slate-900">
@@ -712,7 +754,7 @@ export default function App() {
                   {/* Phone Mockup 2 */}
                   <div className="group relative">
                     <div className="absolute -inset-1 rounded-[3rem] bg-gradient-to-r from-violet-500 to-purple-500 opacity-75 blur-xl transition duration-1000 group-hover:opacity-100"></div>
-                    <div className="relative h-[600px] w-[280px] overflow-hidden rounded-[3rem] border-8 border-slate-900 bg-white shadow-2xl">
+                    <div className="relative h-[520px] w-full max-w-[280px] overflow-hidden rounded-[3rem] border-8 border-slate-900 bg-white shadow-2xl sm:h-[600px]">
                       <div className="flex h-full flex-col bg-gradient-to-b from-violet-50 to-white p-6">
                         <div className="mb-6 text-center">
                           <h3 className="text-2xl font-bold text-slate-900">
@@ -779,7 +821,7 @@ export default function App() {
             {/* Services */}
             <div
               id="services"
-              className="bg-gradient-to-b from-white to-slate-50 py-20"
+              className="scroll-mt-24 bg-gradient-to-b from-white to-slate-50 py-20"
             >
               <div className="mx-auto max-w-7xl px-6">
                 <div className="mb-16 text-center">
@@ -970,7 +1012,7 @@ export default function App() {
             {/* Waitlist Form */}
             <div
               id="waitlist"
-              className="mx-auto flex max-w-7xl justify-center px-6 py-20"
+              className="scroll-mt-24 mx-auto flex max-w-7xl justify-center px-4 py-16 sm:px-6 sm:py-20"
             >
               <div className="w-full max-w-4xl rounded-[2rem] border border-slate-100 bg-white p-8 shadow-2xl md:p-12">
                 <div className="text-center">
@@ -1021,11 +1063,15 @@ export default function App() {
                         />
                         <button
                           type="submit"
+                          disabled={waitlistPending}
                           className="whitespace-nowrap rounded-xl bg-gradient-to-r from-teal-600 to-teal-500 px-8 py-4 font-bold text-white shadow-lg shadow-teal-500/20 transition-all hover:shadow-xl hover:shadow-teal-500/30 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          Join Now
+                          {waitlistPending ? "Joining..." : "Join Now"}
                         </button>
                       </div>
+                      {waitlistError ? (
+                        <p className="text-sm text-red-600">{waitlistError}</p>
+                      ) : null}
                     </form>
                   )}
                 </div>
@@ -1035,9 +1081,9 @@ export default function App() {
             {/* App Store Pre-registration */}
             <div className="bg-slate-900 px-6 py-20">
               <div className="mx-auto max-w-3xl text-center">
-                <div className="mb-4 text-xs font-bold uppercase tracking-widest text-teal-400">Coming Soon</div>
+                <div className="mb-4 text-xs font-bold uppercase tracking-widest text-teal-400">Download</div>
                 <h2 className="mb-4 text-4xl font-bold text-white">Available on iOS & Android</h2>
-                <p className="mb-10 text-slate-400">The app is in final development. Pre-register on your platform to get notified the moment it drops — and jump the queue.</p>
+                <p className="mb-10 text-slate-400">TourBhook is on Google Play. The iOS app is still on the way.</p>
                 <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
                   <a href="#" onClick={(e) => e.preventDefault()} className="flex w-full items-center justify-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-8 py-4 text-white backdrop-blur transition hover:bg-white/20 sm:w-auto">
                     <svg className="h-7 w-7 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -1048,24 +1094,24 @@ export default function App() {
                       <div className="font-bold">App Store</div>
                     </div>
                   </a>
-                  <a href="#" onClick={(e) => e.preventDefault()} className="flex w-full items-center justify-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-8 py-4 text-white backdrop-blur transition hover:bg-white/20 sm:w-auto">
+                  <a href="https://play.google.com/store/apps/details?id=com.tourbhookmobile" target="_blank" rel="noopener noreferrer" className="flex w-full items-center justify-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-8 py-4 text-white backdrop-blur transition hover:bg-white/20 sm:w-auto">
                     <svg className="h-7 w-7 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M3.18 23.76c.3.17.65.19.98.07l12.06-6.97-2.55-2.55-10.49 9.45zm-1.81-20.5c-.1.27-.15.56-.15.87v19.74c0 .31.05.6.15.87l.09.08 11.05-11.04v-.27L1.46 3.18l-.09.08zM21.37 10.44l-2.62-1.51-2.88 2.88 2.88 2.88 2.64-1.53c.76-.44.76-1.27-.02-1.72zm-18.19 12.5l10.49-9.45-2.55-2.55-7.94 12z"/>
                     </svg>
                     <div className="text-left">
-                      <div className="text-xs text-slate-400">Pre-register on</div>
+                      <div className="text-xs text-slate-400">Get it on</div>
                       <div className="font-bold">Google Play</div>
                     </div>
                   </a>
                 </div>
-                <p className="mt-6 text-xs text-slate-500">Links will go live when store listings are approved. Join the waitlist above to get notified first.</p>
+                <p className="mt-6 text-xs text-slate-500">The iOS listing will be added when it is approved.</p>
               </div>
             </div>
 
             {/* Contact Section */}
             <section
               id="contact"
-              className="border-t border-slate-100 bg-white py-20"
+              className="scroll-mt-24 border-t border-slate-100 bg-white py-20"
             >
               <div className="mx-auto max-w-7xl px-6">
                 <div className="flex flex-col gap-16 md:flex-row">
@@ -1077,12 +1123,10 @@ export default function App() {
                       Have questions? We'd love to hear from
                       you.
                     </p>
-                    <div className="flex items-center justify-center gap-4 md:justify-start">
-                      <Mail className="text-teal-600" />
-                      <span className="text-slate-700">
-                        hello.tourbhook@gmail.com
-                      </span>
-                    </div>
+                    <EmailOfficeButton
+                      label="Email us"
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-teal-600 px-5 py-2.5 font-semibold text-white shadow-lg shadow-teal-500/20 transition hover:bg-teal-700"
+                    />
                   </div>
                   <div className="md:w-7/12">
                     <div className="rounded-2xl border border-slate-100 bg-gray-50 p-8">
@@ -1123,10 +1167,14 @@ export default function App() {
                           />
                           <button
                             type="submit"
+                            disabled={contactPending}
                             className="w-full rounded-lg bg-slate-900 py-3 font-bold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            Send Message
+                            {contactPending ? "Sending..." : "Send Message"}
                           </button>
+                          {contactError ? (
+                            <p className="text-sm text-red-600">{contactError}</p>
+                          ) : null}
                         </form>
                       )}
                     </div>
@@ -1244,7 +1292,7 @@ export default function App() {
                   }}
                   className="mt-10 inline-flex items-center gap-2 rounded-2xl bg-white px-8 py-4 font-bold text-slate-900 shadow-xl transition-all hover:scale-105 hover:shadow-2xl"
                 >
-                  View Open Roles{" "}
+                  Careers{" "}
                   <ArrowRight className="h-5 w-5" />
                 </button>
               </div>
@@ -1706,7 +1754,7 @@ export default function App() {
                   }}
                   className="inline-flex items-center gap-2 rounded-2xl bg-white px-10 py-4 font-bold text-slate-900 shadow-xl transition-all hover:scale-105 hover:shadow-2xl"
                 >
-                  See Open Roles{" "}
+                  Careers{" "}
                   <ArrowRight className="h-5 w-5" />
                 </button>
               </div>
@@ -1737,8 +1785,8 @@ export default function App() {
             <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900 px-6 py-24 text-center text-white">
               <div className="mx-auto max-w-3xl">
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-teal-300">
-                  <Building2 className="h-3.5 w-3.5" /> We're
-                  Hiring
+                  <Building2 className="h-3.5 w-3.5" /> Not
+                  hiring right now
                 </div>
                 <h1 className="mb-6 text-5xl font-bold leading-tight md:text-6xl">
                   Build the Future of{" "}
@@ -1747,9 +1795,8 @@ export default function App() {
                   </span>
                 </h1>
                 <p className="mx-auto max-w-2xl text-lg text-slate-300">
-                  Join a small, passionate team building
-                  something travellers will love. We move fast,
-                  think deeply, and care about craft.
+                  We are not hiring right now. New roles will
+                  appear here when we open them.
                 </p>
               </div>
             </div>
@@ -1761,8 +1808,12 @@ export default function App() {
                   Open Positions
                 </div>
                 <h2 className="text-4xl font-bold text-slate-900">
-                  2 Roles Available
+                  No open roles
                 </h2>
+                <p className="mx-auto mt-4 max-w-xl text-slate-500">
+                  We are not hiring right now. Roles will show
+                  up here when we start again.
+                </p>
               </div>
 
               <div className="space-y-6">
@@ -1836,8 +1887,8 @@ export default function App() {
             {/* Bottom CTA */}
             <div className="border-t border-slate-100 bg-gradient-to-b from-slate-50 to-white py-16 text-center">
               <p className="text-slate-500">
-                Click on any role above to view full details and
-                apply.
+                Applications are closed until a role is listed
+                here.
               </p>
             </div>
           </div>
@@ -2186,6 +2237,7 @@ export default function App() {
                             </label>
                             <input
                               type="text"
+                              name="fullName"
                               placeholder="Your full name"
                               required
                               className={`w-full rounded-xl border border-slate-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 ${accentRing}`}
@@ -2197,6 +2249,7 @@ export default function App() {
                             </label>
                             <input
                               type="email"
+                              name="email"
                               placeholder="you@email.com"
                               required
                               className={`w-full rounded-xl border border-slate-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 ${accentRing}`}
@@ -2211,6 +2264,7 @@ export default function App() {
                             </label>
                             <input
                               type="tel"
+                              name="phone"
                               placeholder="+91 98765 43210"
                               className={`w-full rounded-xl border border-slate-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 ${accentRing}`}
                             />
@@ -2221,6 +2275,7 @@ export default function App() {
                             </label>
                             <input
                               type="url"
+                              name="linkedinUrl"
                               placeholder="https://linkedin.com/in/you"
                               className={`w-full rounded-xl border border-slate-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 ${accentRing}`}
                             />
@@ -2232,6 +2287,7 @@ export default function App() {
                             Years of Experience
                           </label>
                           <select
+                            name="experience"
                             required
                             className={`w-full rounded-xl border border-slate-200 bg-gray-50 px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 ${accentRing}`}
                           >
@@ -2262,6 +2318,7 @@ export default function App() {
                             </span>
                             <input
                               type="file"
+                              name="resume"
                               accept=".pdf,.doc,.docx"
                               className="hidden"
                               required
@@ -2275,6 +2332,7 @@ export default function App() {
                           </label>
                           <input
                             type="url"
+                            name="githubUrl"
                             placeholder="https://github.com/you"
                             className={`w-full rounded-xl border border-slate-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 ${accentRing}`}
                           />
@@ -2286,6 +2344,7 @@ export default function App() {
                             *
                           </label>
                           <textarea
+                            name="whyJoin"
                             rows={4}
                             placeholder="Tell us about yourself and why this role excites you..."
                             required
@@ -2293,11 +2352,15 @@ export default function App() {
                           />
                         </div>
 
+                        {applicationError ? (
+                          <p className="mb-4 text-sm text-red-600">{applicationError}</p>
+                        ) : null}
                         <button
                           type="submit"
-                          className={`w-full rounded-2xl bg-gradient-to-r ${gradientBtn} py-4 font-bold text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl`}
+                          disabled={applicationPending}
+                          className={`w-full rounded-2xl bg-gradient-to-r ${gradientBtn} py-4 font-bold text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50`}
                         >
-                          Submit Application
+                          {applicationPending ? "Sending..." : "Submit Application"}
                         </button>
                       </form>
                     )}
@@ -2612,20 +2675,20 @@ export default function App() {
                   </div>
                 ) : (
                   <form
-                    onSubmit={(e) => { e.preventDefault(); setPartnerSubmitted(true); }}
+                    onSubmit={handlePartnerSubmit}
                     className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-sm md:p-10"
                   >
                     <div className="mb-6">
                       <label className="mb-2 block text-sm font-semibold text-slate-300">Full Name *</label>
-                      <input type="text" placeholder="Your full name" required className="w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                      <input type="text" name="fullName" placeholder="Your full name" required className="w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500" />
                     </div>
                     <div className="mb-6">
                       <label className="mb-2 block text-sm font-semibold text-slate-300">Phone / WhatsApp Number *</label>
-                      <input type="tel" placeholder="+91 98765 43210" required className="w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                      <input type="tel" name="phone" placeholder="+91 98765 43210" required className="w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500" />
                     </div>
                     <div className="mb-6">
                       <label className="mb-2 block text-sm font-semibold text-slate-300">Years of Experience in Travel *</label>
-                      <select required className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+                      <select name="experience" required className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
                         <option value="">Select experience</option>
                         <option>2 Years</option>
                         <option>3–5 Years</option>
@@ -2634,10 +2697,13 @@ export default function App() {
                     </div>
                     <div className="mb-8">
                       <label className="mb-2 block text-sm font-semibold text-slate-300">Current Location *</label>
-                      <input type="text" placeholder="City, State" required className="w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                      <input type="text" name="location" placeholder="City, State" required className="w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500" />
                     </div>
-                    <button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 py-4 font-bold text-white shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] hover:shadow-xl">
-                      Submit Application &amp; Get Started
+                    {partnerError ? (
+                      <p className="mb-4 text-sm text-red-300">{partnerError}</p>
+                    ) : null}
+                    <button type="submit" disabled={partnerPending} className="w-full rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 py-4 font-bold text-white shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50">
+                      {partnerPending ? "Sending..." : "Submit Application & Get Started"}
                     </button>
                   </form>
                 )}
@@ -2715,7 +2781,7 @@ export default function App() {
                     <span className="font-semibold">Got it! Your idea is in the queue. Thank you.</span>
                   </div>
                 ) : (
-                  <form onSubmit={(e) => { e.preventDefault(); if (wishlistIdea.trim()) setWishlistSubmitted(true); }} className="space-y-4">
+                  <form onSubmit={handleIdeaSubmit} className="space-y-4">
                     <textarea
                       value={wishlistIdea}
                       onChange={(e) => setWishlistIdea(e.target.value)}
@@ -2723,8 +2789,11 @@ export default function App() {
                       rows={3}
                       className="w-full resize-none rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
                     />
-                    <button type="submit" disabled={!wishlistIdea.trim()} className="rounded-xl bg-teal-600 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-teal-700 disabled:opacity-40">
-                      Submit Idea
+                    {ideaError ? (
+                      <p className="text-sm text-red-600">{ideaError}</p>
+                    ) : null}
+                    <button type="submit" disabled={!wishlistIdea.trim() || ideaPending} className="rounded-xl bg-teal-600 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-teal-700 disabled:opacity-40">
+                      {ideaPending ? "Sending..." : "Submit Idea"}
                     </button>
                   </form>
                 )}
@@ -2743,9 +2812,10 @@ export default function App() {
                 </div>
                 <h1 className="mb-4 text-5xl font-bold text-slate-900 md:text-6xl">Media Kit</h1>
                 <p className="text-lg text-slate-500">Everything you need to cover Tour Bhook. For press enquiries, email us directly.</p>
-                <a href="mailto:info@tourbhook.com" className="mt-6 inline-flex items-center gap-2 rounded-full border border-slate-200 px-5 py-2 text-sm font-medium text-slate-700 transition hover:border-teal-300 hover:text-teal-600">
-                  <Mail className="h-4 w-4" /> info@tourbhook.com
-                </a>
+                <EmailOfficeButton
+                  label="Email us"
+                  className="mt-6 inline-flex items-center gap-2 rounded-full border border-slate-200 px-5 py-2 text-sm font-medium text-slate-700 transition hover:border-teal-300 hover:text-teal-600"
+                />
               </div>
             </div>
 
@@ -2805,80 +2875,125 @@ export default function App() {
               <div className="rounded-3xl bg-slate-900 p-8 text-center text-white md:p-10">
                 <h2 className="mb-3 text-2xl font-bold">Press Enquiries</h2>
                 <p className="mb-6 text-slate-400">For interviews, features, or media requests, reach out directly. We typically respond within 24 hours.</p>
-                <a href="mailto:info@tourbhook.com" className="inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-3 font-bold text-slate-900 transition hover:bg-slate-100">
-                  <Mail className="h-4 w-4" /> info@tourbhook.com
-                </a>
+                <EmailOfficeButton
+                  label="Email us"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-3 font-bold text-slate-900 transition hover:bg-slate-100"
+                />
               </div>
             </div>
           </div>
         )}
 
-        {/* Privacy Policy Page */}
-        {currentPage === "privacy" && (
+        {currentPage === "ceo" && (
           <div className="animate-in fade-in duration-500">
-            <div className="border-b border-slate-100 bg-white px-6 py-16 text-center">
-              <h1 className="text-4xl font-bold text-slate-900 md:text-5xl">Privacy Policy</h1>
-              <p className="mt-3 text-slate-500">Last updated: September 2026</p>
+            <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900 px-6 py-20 text-white">
+              <div className="mx-auto max-w-3xl text-center">
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-teal-300">
+                  <MessageSquare className="h-3.5 w-3.5" /> CEO's Office
+                </div>
+                <h1 className="mb-4 text-4xl font-bold md:text-6xl">Write directly to the CEO's Office</h1>
+                <p className="text-lg text-slate-300">
+                  Product improvements, a feature you want, a note for customer support, or anything else. It goes only to the CEO's Office.
+                </p>
+              </div>
             </div>
             <div className="mx-auto max-w-3xl px-6 py-16">
-              <div className="space-y-10">
-                {[
-                  {
-                    title: "1. Who We Are",
-                    body: "Tour Bhook is an AI-powered travel planning service operated by Pramahar Technologies ('we', 'us', 'our'). This Privacy Policy explains how we collect, use, and protect your personal information when you use our website or join our waitlist.",
-                  },
-                  {
-                    title: "2. Information We Collect",
-                    body: "We collect information you provide directly — such as your email address when joining the waitlist, your name and contact details when applying for a job or partner role, and messages you send through our contact form. We may also collect basic usage data (pages visited, time on site) through analytics tools to improve the experience.",
-                  },
-                  {
-                    title: "3. How We Use Your Information",
-                    body: "We use your email address to send you updates about Tour Bhook's launch, early access invitations, and product news. We use contact form submissions to respond to your enquiries. We use job and partner applications to evaluate your suitability for roles. We never sell your personal data to third parties.",
-                  },
-                  {
-                    title: "4. Data Storage & Security",
-                    body: "Your data is stored securely using industry-standard encryption. We use reputable third-party service providers for email delivery and form handling, all of whom are contractually bound to protect your data. We retain waitlist data until the app launches or you request deletion, whichever comes first.",
-                  },
-                  {
-                    title: "5. Your Rights",
-                    body: "You have the right to access, correct, or delete your personal data at any time. To exercise these rights, email us at hello.tourbhook@gmail.com. You may also unsubscribe from our mailing list at any time by clicking 'Unsubscribe' in any email we send you.",
-                  },
-                  {
-                    title: "6. Cookies",
-                    body: "We use minimal cookies to ensure the website functions correctly and to understand how visitors interact with the site. We do not use advertising cookies or track you across other websites. You can disable cookies in your browser settings, though this may affect some functionality.",
-                  },
-                  {
-                    title: "7. Third-Party Links",
-                    body: "Our website may link to external services such as Google Play Store, Apple App Store, Instagram, and Twitter. We are not responsible for the privacy practices of these third parties and encourage you to review their respective privacy policies.",
-                  },
-                  {
-                    title: "8. Children's Privacy",
-                    body: "Tour Bhook is not directed at children under the age of 13. We do not knowingly collect personal information from children. If you believe a child has submitted data to us, please contact us and we will delete it promptly.",
-                  },
-                  {
-                    title: "9. Changes to This Policy",
-                    body: "We may update this Privacy Policy from time to time. When we do, we will update the 'Last updated' date at the top. Continued use of the site after changes are posted constitutes your acceptance of the revised policy.",
-                  },
-                  {
-                    title: "10. Contact Us",
-                    body: "For any privacy-related questions or requests, contact us at hello.tourbhook@gmail.com. We aim to respond within 5 business days.",
-                  },
-                ].map((section, i) => (
-                  <div key={i} className="border-b border-slate-100 pb-8 last:border-0">
-                    <h2 className="mb-3 text-xl font-bold text-slate-900">{section.title}</h2>
-                    <p className="leading-relaxed text-slate-600">{section.body}</p>
-                  </div>
-                ))}
+              <div className="mb-8 rounded-2xl border border-teal-100 bg-teal-50 px-5 py-4 text-sm text-teal-900">
+                Other visitors cannot see what you send. There is no public list of these notes.
               </div>
-              <div className="mt-12 rounded-2xl border border-teal-100 bg-teal-50 p-6 text-center">
-                <p className="text-sm text-teal-800">Questions about your data? <a href="mailto:hello.tourbhook@gmail.com" className="font-semibold underline">hello.tourbhook@gmail.com</a></p>
+              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-10">
+                {ceoSubmitted ? (
+                  <div className="py-10 text-center">
+                    <CheckCircle className="mx-auto mb-4 h-12 w-12 text-teal-500" />
+                    <h2 className="mb-2 text-2xl font-bold text-slate-900">Sent to the CEO's Office</h2>
+                    <p className="text-slate-500">
+                      Thank you. This note is private and is not shown to anyone else on the site.
+                    </p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleCeoSubmit} className="space-y-5">
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-700" htmlFor="ceo-name">
+                        Name <span className="font-normal text-slate-400">(optional)</span>
+                      </label>
+                      <input
+                        id="ceo-name"
+                        type="text"
+                        name="name"
+                        maxLength={200}
+                        placeholder="Your name"
+                        className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-700" htmlFor="ceo-email">
+                        Email
+                      </label>
+                      <input
+                        id="ceo-email"
+                        type="email"
+                        name="email"
+                        required
+                        maxLength={320}
+                        placeholder="So the office can reply"
+                        className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-700" htmlFor="ceo-topic">
+                        What is this about?
+                      </label>
+                      <select
+                        id="ceo-topic"
+                        name="topic"
+                        defaultValue="Something else"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      >
+                        <option>Product improvement</option>
+                        <option>New feature</option>
+                        <option>Customer support</option>
+                        <option>Something else</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-700" htmlFor="ceo-message">
+                        Your note
+                      </label>
+                      <textarea
+                        id="ceo-message"
+                        name="message"
+                        required
+                        rows={6}
+                        maxLength={5000}
+                        placeholder="Tell the CEO's Office whatever you want them to know."
+                        className="w-full rounded-xl border border-slate-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                    {ceoError ? <p className="text-sm text-red-600">{ceoError}</p> : null}
+                    <button
+                      type="submit"
+                      disabled={ceoPending}
+                      className="w-full rounded-xl bg-slate-900 py-3 font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {ceoPending ? "Sending..." : "Send to the CEO's Office"}
+                    </button>
+                  </form>
+                )}
+              </div>
+              <div className="mt-8 text-center">
+                <p className="mb-3 text-sm text-slate-500">Prefer the mail app on this device?</p>
+                <EmailOfficeButton
+                  label="Email us"
+                  subject="Note for the CEO's Office"
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-600"
+                />
               </div>
             </div>
           </div>
         )}
 
         {/* 404 Fallback */}
-        {!["home","about","crewbhook","careers","partner","job-detail","roadmap","press","privacy"].includes(currentPage) && (
+        {!["home","about","crewbhook","careers","partner","job-detail","roadmap","press","ceo"].includes(currentPage) && (
           <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center animate-in fade-in duration-500">
             <div className="mb-6 text-7xl">🗺️</div>
             <h1 className="mb-3 text-4xl font-bold text-slate-900">Page not found</h1>
@@ -2962,6 +3077,14 @@ export default function App() {
                     Press &amp; Media
                   </button>
                 </li>
+                <li>
+                  <button
+                    onClick={() => navigateTo("ceo")}
+                    className="hover:text-teal-600"
+                  >
+                    CEO's Office
+                  </button>
+                </li>
               </ul>
             </div>
             <div>
@@ -2995,9 +3118,12 @@ export default function App() {
               >
                 Terms
               </button>
-              <button onClick={() => { navigateTo("privacy"); window.scrollTo(0,0); }} className="hover:text-slate-900">
+              <a href="/privacy-policy" className="hover:text-slate-900">
                 Privacy
-              </button>
+              </a>
+              <a href="/delete-account" className="hover:text-slate-900">
+                Delete account
+              </a>
             </div>
           </div>
         </div>
@@ -3012,9 +3138,9 @@ export default function App() {
             <button onClick={() => setCookieDismissed(true)} className="rounded-xl bg-slate-900 px-5 py-2 text-sm font-bold text-white transition hover:bg-slate-700">
               Got it
             </button>
-            <button onClick={() => { navigateTo("privacy"); setCookieDismissed(true); }} className="text-sm text-slate-400 underline transition hover:text-slate-600">
+            <a href="/privacy-policy" className="text-sm text-slate-400 underline transition hover:text-slate-600">
               Privacy Policy
-            </button>
+            </a>
           </div>
         </div>
       )}
@@ -3044,11 +3170,18 @@ export default function App() {
                   { title: "5. Third-Party Services", body: "The App may integrate with third-party services including mapping providers, booking platforms, and AI APIs. We are not responsible for the availability, accuracy, or content of third-party services." },
                   { title: "6. Limitation of Liability", body: "Tour Bhook and Pramahar Technologies shall not be liable for any indirect, incidental, or consequential damages arising from your use of the App, including travel disruptions, booking errors, or reliance on AI-generated itineraries." },
                   { title: "7. Changes to Terms", body: "We reserve the right to modify these Terms at any time. Continued use of the App after changes are posted constitutes your acceptance of the revised Terms." },
-                  { title: "8. Contact", body: "For any questions about these Terms, contact us at hello.tourbhook@gmail.com." },
+                  { title: "8. Contact", body: "For any questions about these Terms, use the button below. It opens the mail app on this device." },
                 ].map((section, i) => (
                   <div key={i}>
                     <div className="mb-1 font-semibold text-slate-800">{section.title}</div>
                     <p>{section.body}</p>
+                    {section.title.startsWith("8.") ? (
+                      <EmailOfficeButton
+                        label="Email us"
+                        subject="Terms question"
+                        className="mt-3 inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2 font-semibold text-white"
+                      />
+                    ) : null}
                   </div>
                 ))}
               </div>

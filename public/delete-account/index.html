@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Delete your TourBhook account</title>
+    <meta
+      name="description"
+      content="Request deletion of your TourBhook account and personal data. No sign-in is required."
+    />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <style>
+      :root { color-scheme: light; }
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0f172a; background: #fff; line-height: 1.6; }
+      a { color: #0f766e; }
+      header, footer { background: #f8fafc; border-color: #e2e8f0; border-style: solid; }
+      header { border-bottom-width: 1px; }
+      footer { border-top-width: 1px; }
+      .wrap { width: min(760px, calc(100% - 32px)); margin: 0 auto; }
+      header .wrap, footer .wrap { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 18px 0; flex-wrap: wrap; }
+      .brand { color: #0f172a; font-weight: 700; text-decoration: none; font-size: 1.15rem; }
+      .brand span { color: #0d9488; }
+      nav { display: flex; gap: 16px; font-size: 0.95rem; }
+      h1 { font-size: clamp(2rem, 5vw, 3rem); line-height: 1.15; margin: 0 0 8px; }
+      main { padding: 40px 0 64px; }
+      section { padding: 0 0 28px; margin: 0 0 28px; border-bottom: 1px solid #f1f5f9; }
+      h2 { font-size: 1.25rem; margin: 0 0 8px; }
+      p, li, label { color: #334155; }
+      ul, ol { padding-left: 1.2rem; }
+      form { display: grid; gap: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 18px; }
+      label { font-weight: 600; display: grid; gap: 6px; }
+      input, textarea { width: 100%; font: inherit; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px 14px; background: #fff; }
+      button { font: inherit; font-weight: 700; color: #fff; background: #0f766e; border: 0; border-radius: 12px; padding: 12px 16px; cursor: pointer; }
+      button:disabled { opacity: 0.6; cursor: not-allowed; }
+      .ok { background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 16px; padding: 16px 18px; }
+      .err { color: #b91c1c; margin: 0; }
+      .optional { font-weight: 400; color: #64748b; }
+      .mail-btn { display: inline-flex; align-items: center; background: #0f766e; color: #fff !important; text-decoration: none; font-weight: 700; border-radius: 999px; padding: 8px 14px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <a class="brand" href="/">Tour <span>Bhook</span></a>
+        <nav>
+          <a href="/privacy-policy">Privacy Policy</a>
+          <a href="/delete-account">Delete account</a>
+        </nav>
+      </div>
+    </header>
+    <main class="wrap">
+      <h1>Delete your TourBhook account</h1>
+      <p>You can ask Pramahar Technologies to delete your TourBhook account and the personal data tied to it. You do not need to sign in to make this request.</p>
+
+      <section>
+        <h2>1. How to request deletion</h2>
+        <ol>
+          <li>If the TourBhook app shows a delete-account option in account settings, you can use that.</li>
+          <li>If it does not, submit the form on this page. This is the web request we use when deletion is not completed inside the app.</li>
+          <li>Or use the button below. It opens the mail app on this device with the subject “Account deletion request”. Include the email address or phone number on the account, and the words “Please delete my TourBhook account”.</li>
+        </ol>
+        <p><a class="mail-btn" href="mailto:info@tourbhook.com?subject=Account%20deletion%20request">Email a deletion request</a></p>
+        <p>We may reply to that email or phone number to confirm you control it before we delete the account.</p>
+      </section>
+
+      <section>
+        <h2>2. Request form</h2>
+        <form id="delete-form">
+          <label>
+            Email address on the account
+            <input type="email" name="email" autocomplete="email" required maxlength="320" placeholder="you@email.com" />
+          </label>
+          <label>
+            Full name <span class="optional">(optional)</span>
+            <input type="text" name="name" autocomplete="name" maxlength="200" />
+          </label>
+          <label>
+            Phone number on the account <span class="optional">(optional)</span>
+            <input type="tel" name="phone" autocomplete="tel" maxlength="40" />
+          </label>
+          <label>
+            Anything else we should know <span class="optional">(optional)</span>
+            <textarea name="details" rows="4" maxlength="2000" placeholder="For example, the name on the account if it differs from the email."></textarea>
+          </label>
+          <p id="form-error" class="err" hidden></p>
+          <button type="submit">Submit deletion request</button>
+        </form>
+        <div id="form-success" class="ok" hidden>
+          <p><strong>Request received.</strong> We will confirm it using the email address you entered and delete the account data described below within 30 days.</p>
+        </div>
+      </section>
+
+      <section>
+        <h2>3. What we delete</h2>
+        <p>After we confirm the request, we delete:</p>
+        <ul>
+          <li>Your account profile, including name, email address, phone number, and Google Sign-In identifier.</li>
+          <li>Trip plans, saved places, preferences, and other content stored in the account.</li>
+          <li>One-time verification codes, which are not kept after use.</li>
+          <li>Support messages that are only about that account, unless we still need them for a legal claim.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>4. What we may keep, and for how long</h2>
+        <ul>
+          <li><strong>Payment and tax records</strong> from Razorpay transactions, such as the amount, date, and payment reference. We keep these for up to 8 years where Indian tax or accounting law requires it. We do not keep your card number or UPI PIN.</li>
+          <li><strong>Security logs</strong> for up to 90 days, to investigate abuse or fraud.</li>
+          <li><strong>Backup copies</strong> until the backup cycle overwrites them, within 90 days.</li>
+        </ul>
+        <p>Retained records are limited to what that purpose needs and are not used to operate the deleted account.</p>
+      </section>
+
+      <section>
+        <h2>5. Timing</h2>
+        <p>We complete deletion within 30 days of confirming that the request comes from the account holder. We email that confirmation to the address on the account. Deleting the account does not by itself reverse a payment that has already been captured; payment questions can be sent to the same email address.</p>
+      </section>
+    </main>
+    <footer>
+      <div class="wrap">
+        <span>© 2026 TourBhook by PRAMAHAR</span>
+        <nav>
+          <a href="/privacy-policy">Privacy Policy</a>
+          <a href="/delete-account">Delete account</a>
+        </nav>
+      </div>
+    </footer>
+    <script>
+      const form = document.getElementById("delete-form");
+      const error = document.getElementById("form-error");
+      const success = document.getElementById("form-success");
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        error.hidden = true;
+        const data = Object.fromEntries(new FormData(form).entries());
+        const button = form.querySelector("button");
+        button.disabled = true;
+        try {
+          const response = await fetch("/api/account-deletions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          });
+          const body = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(body.error || "Could not submit the request");
+          form.hidden = true;
+          success.hidden = false;
+        } catch (err) {
+          error.textContent = err instanceof Error ? err.message : "Could not submit the request";
+          error.hidden = false;
+          button.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
