@@ -8,6 +8,7 @@ import express from "express";
 import multer from "multer";
 import { ensureAdmin, loginAdmin, requireAdmin } from "./auth.js";
 import { createPool, migrate, query } from "./db.js";
+import { sendCeoOfficeNote } from "./ceoMail.js";
 import { deleteResume, isCloudResume, openResume, saveResume } from "./resumes.js";
 
 const serverRoot = path.join(
@@ -165,12 +166,23 @@ export function createApp(pool, uploadDir) {
       if (!message) {
         return res.status(400).json({ error: "Write your feedback or suggestion" });
       }
+      const id = crypto.randomUUID();
       await query(
         pool,
         `INSERT INTO ceo_office_messages (id, name, email, topic, message)
          VALUES (?, ?, ?, ?, ?)`,
-        [crypto.randomUUID(), name || null, email, topic || null, message],
+        [id, name || null, email, topic || null, message],
       );
+      try {
+        await sendCeoOfficeNote({ id, name, email, topic, message });
+        await query(
+          pool,
+          "UPDATE ceo_office_messages SET notified_at = CURRENT_TIMESTAMP(3) WHERE id = ?",
+          [id],
+        );
+      } catch (mailError) {
+        console.error("CEO office email was not sent:", mailError.message);
+      }
       return res.status(201).json({ ok: true });
     } catch (error) {
       return next(error);
@@ -349,7 +361,7 @@ export function createApp(pool, uploadDir) {
     try {
       const items = await query(
         pool,
-        `SELECT id, name, email, topic, message, created_at
+        `SELECT id, name, email, topic, message, created_at, notified_at
          FROM ceo_office_messages ORDER BY created_at DESC`,
       );
       res.json({ items });

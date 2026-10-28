@@ -49,4 +49,12 @@ export async function migrate(pool) {
   for (const statement of statements) {
     await pool.query(statement);
   }
+  const [columns] = await pool.query(
+    "SHOW COLUMNS FROM ceo_office_messages LIKE 'notified_at'",
+  );
+  if (columns.length === 0) {
+    await pool.query(
+      "ALTER TABLE ceo_office_messages ADD COLUMN notified_at TIMESTAMP(3) NULL",
+    );
+  }
 }

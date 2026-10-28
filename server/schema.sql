@@ -50,7 +50,8 @@ CREATE TABLE IF NOT EXISTS ceo_office_messages (
   email VARCHAR(320) NOT NULL,
   topic VARCHAR(80) NULL,
   message TEXT NOT NULL,
-  created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+  created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  notified_at TIMESTAMP(3) NULL
 );
 
 CREATE TABLE IF NOT EXISTS account_deletion_requests (
