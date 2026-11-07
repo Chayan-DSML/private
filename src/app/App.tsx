@@ -345,6 +345,9 @@ export default function App() {
             >
               CEO's Office
             </button>
+            <a href="/faqs" className="transition-colors hover:text-slate-900">
+              FAQs
+            </a>
             <button
               onClick={() => navigateTo("home", "contact")}
               className="transition-colors hover:text-slate-900"
@@ -401,6 +404,9 @@ export default function App() {
               >
                 CEO's Office
               </button>
+              <a href="/faqs" className="text-left font-medium text-slate-600">
+                FAQs
+              </a>
               <button
                 onClick={() => navigateTo("home", "contact")}
                 className="text-left font-medium text-slate-600"
@@ -886,6 +892,9 @@ export default function App() {
                 <p className="text-lg text-slate-500">
                   Everything you need to know about Tour Bhook
                 </p>
+                <a href="/faqs" className="mt-4 inline-flex font-semibold text-teal-700 hover:text-teal-800">
+                  Read the full FAQ and comparison
+                </a>
               </div>
 
               <div className="space-y-4">
@@ -893,7 +902,7 @@ export default function App() {
                   {
                     question: "Is Tour Bhook free to use?",
                     answer:
-                      "Tour Bhook will offer both free and premium tiers. The free version includes basic route optimization and destination guides. Premium features include advanced AI planning, offline maps, and priority support. We'll announce pricing details closer to launch.",
+                      "Tour Bhook will offer both free and premium tiers. The free version includes basic route optimization and destination guides. Premium features include advanced AI planning and priority support. We'll announce pricing details closer to launch.",
                   },
                   {
                     question: "When will Tour Bhook launch?",
@@ -914,7 +923,7 @@ export default function App() {
                   {
                     question: "Can I use Tour Bhook offline?",
                     answer:
-                      "Yes! Premium users can download maps and itineraries for offline access. Your planned routes, saved places, and AI summaries will be available even without internet connection.",
+                      "TourBhook uses live spatial feeds and community data so routes stay current. Offline map downloads are not part of the product. The FAQ page explains what the routing engine does instead.",
                   },
                   {
                     question:
@@ -1034,17 +1043,17 @@ export default function App() {
                       <div className="mx-auto max-w-md rounded-2xl border border-teal-100 bg-teal-50 p-6 text-left">
                         <p className="mb-3 text-sm font-semibold text-teal-800">📣 Share with friends → move up the waitlist</p>
                         <div className="mb-3 flex items-center gap-2 rounded-xl border border-teal-200 bg-white px-4 py-2.5 text-sm text-slate-600">
-                          <span className="flex-1 truncate">tourbhook.com/?ref=early</span>
+                          <span className="flex-1 truncate">www.tourbhook.com/?ref=early</span>
                           <button
-                            onClick={() => { navigator.clipboard.writeText("https://tourbhook.com/?ref=early"); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000); }}
+                            onClick={() => { navigator.clipboard.writeText("https://www.tourbhook.com/?ref=early"); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000); }}
                             className="flex items-center gap-1.5 rounded-lg bg-teal-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-teal-700"
                           >
                             {referralCopied ? <><Check className="h-3 w-3" /> Copied!</> : <><Copy className="h-3 w-3" /> Copy</>}
                           </button>
                         </div>
                         <div className="flex gap-2">
-                          <a href={`https://wa.me/?text=${encodeURIComponent("I just joined the Tour Bhook waitlist — the AI travel planner that saves hours of planning. Join here: https://tourbhook.com/?ref=early")}`} target="_blank" rel="noopener noreferrer" className="flex-1 rounded-xl bg-green-500 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-green-600">WhatsApp</a>
-                          <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Just joined the @TourBhook waitlist — AI-powered travel planning that actually makes sense 🌍 Join here: https://tourbhook.com/?ref=early")}`} target="_blank" rel="noopener noreferrer" className="flex-1 rounded-xl bg-slate-900 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-slate-700">Twitter / X</a>
+                          <a href={`https://wa.me/?text=${encodeURIComponent("I just joined the Tour Bhook waitlist — the AI travel planner that saves hours of planning. Join here: https://www.tourbhook.com/?ref=early")}`} target="_blank" rel="noopener noreferrer" className="flex-1 rounded-xl bg-green-500 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-green-600">WhatsApp</a>
+                          <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Just joined the @TourBhook waitlist — AI-powered travel planning that actually makes sense 🌍 Join here: https://www.tourbhook.com/?ref=early")}`} target="_blank" rel="noopener noreferrer" className="flex-1 rounded-xl bg-slate-900 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-slate-700">Twitter / X</a>
                         </div>
                       </div>
                     </div>
@@ -3084,6 +3093,11 @@ export default function App() {
                   >
                     CEO's Office
                   </button>
+                </li>
+                <li>
+                  <a href="/faqs" className="hover:text-teal-600">
+                    FAQs
+                  </a>
                 </li>
               </ul>
             </div>

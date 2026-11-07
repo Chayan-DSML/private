@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import compression from "compression";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
@@ -94,6 +95,17 @@ export function createApp(pool, uploadDir) {
       origin: process.env.CORS_ORIGIN || "http://127.0.0.1:5173",
     }),
   );
+  app.use(compression({ threshold: 1024 }));
+  app.use((req, res, next) => {
+    const host = req.hostname;
+    if (
+      req.get("x-forwarded-proto") === "http" &&
+      (host === "www.tourbhook.com" || host === "tourbhook.com")
+    ) {
+      return res.redirect(301, `https://www.tourbhook.com${req.originalUrl}`);
+    }
+    return next();
+  });
   app.use(express.json({ limit: "100kb" }));
 
   const publicWrite = rateLimit(30, 60_000);
@@ -469,6 +481,10 @@ export function createApp(pool, uploadDir) {
   app.get(
     ["/delete-account", "/delete-account/"],
     sendLegalPage("delete-account/index.html"),
+  );
+  app.get(
+    ["/faqs", "/faqs/"],
+    sendLegalPage("faqs/index.html"),
   );
 
   if (fs.existsSync(path.join(distDir, "index.html"))) {
