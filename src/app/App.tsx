@@ -3300,19 +3300,20 @@ export default function App() {
               </div>
             </div>
           </div>
-          <div className="flex flex-col items-center justify-between border-t border-slate-200 pt-8 text-sm text-slate-500 md:flex-row">
-            <p>© 2026 Tour Bhook Inc.</p>
-            <div className="mt-4 flex space-x-6 md:mt-0">
+          <div className="flex flex-col items-center justify-between gap-4 border-t border-slate-200 pt-8 text-sm font-normal leading-none text-slate-500 md:flex-row">
+            <p className="m-0">© 2026 Tour Bhook Inc.</p>
+            <div className="flex items-center gap-6">
               <button
+                type="button"
                 onClick={() => setShowTermsModal(true)}
-                className="hover:text-slate-900"
+                className="text-sm font-normal leading-none text-slate-500 hover:text-slate-900"
               >
                 Terms
               </button>
-              <a href="/privacy-policy" className="hover:text-slate-900">
+              <a href="/privacy-policy" className="text-sm font-normal leading-none text-slate-500 hover:text-slate-900">
                 Privacy
               </a>
-              <a href="/delete-account" className="hover:text-slate-900">
+              <a href="/delete-account" className="text-sm font-normal leading-none text-slate-500 hover:text-slate-900">
                 Delete account
               </a>
             </div>
