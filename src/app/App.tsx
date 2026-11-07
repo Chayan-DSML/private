@@ -122,6 +122,33 @@ export default function App() {
 
   const sectionTarget = useRef<string | null>(null);
 
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("page");
+    const pages: Page[] = [
+      "home",
+      "about",
+      "crewbhook",
+      "careers",
+      "partner",
+      "job-detail",
+      "roadmap",
+      "press",
+      "ceo",
+    ];
+    const hash = window.location.hash.replace("#", "");
+    if (hash) sectionTarget.current = hash;
+    if (requested && pages.includes(requested as Page) && requested !== "home") {
+      setCurrentPage(requested as Page);
+      return;
+    }
+    if (hash) {
+      const frame = requestAnimationFrame(() => {
+        document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      return () => cancelAnimationFrame(frame);
+    }
+  }, []);
+
   const navigateTo = (page: Page, section?: string) => {
     sectionTarget.current = section ?? null;
     setMobileMenuOpen(false);

@@ -16,13 +16,33 @@
       body { margin: 0; font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0f172a; background: #f8fafc; line-height: 1.6; }
       a { color: #0f766e; }
       header, footer { background: #fff; border-color: #e2e8f0; border-style: solid; }
-      header { border-bottom-width: 1px; position: sticky; top: 0; }
+      header { border-bottom-width: 1px; position: sticky; top: 0; z-index: 40; background: rgba(255,255,255,0.8); backdrop-filter: blur(16px); }
       footer { border-top-width: 1px; }
       .wrap { width: min(980px, calc(100% - 32px)); margin: 0 auto; }
-      header .wrap, footer .wrap { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 18px 0; flex-wrap: wrap; }
-      .brand { color: #0f172a; font-weight: 700; text-decoration: none; font-size: 1.15rem; }
-      .brand span { color: #0d9488; }
-      nav { display: flex; gap: 16px; font-size: 0.95rem; flex-wrap: wrap; }
+      footer .wrap { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 18px 0; flex-wrap: wrap; }
+      .bar { width: min(80rem, calc(100% - 32px)); margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 0; }
+      .brand { display: flex; align-items: center; gap: 12px; color: #0f172a; text-decoration: none; }
+      .brand-mark { height: 48px; width: 48px; flex-shrink: 0; overflow: hidden; border-radius: 16px; background: #0f172a; padding: 10px; box-shadow: 0 10px 15px rgba(15,23,42,0.3); }
+      .brand-mark img { display: block; width: 100%; height: 100%; object-fit: contain; }
+      .brand-name { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+      .brand-name span { background: linear-gradient(90deg, #0d9488, #14b8a6); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .brand-sub { display: block; margin-top: 2px; font-size: 10px; font-weight: 400; color: #64748b; letter-spacing: 0; }
+      .site-nav { display: none; align-items: center; gap: 20px; font-size: 0.875rem; font-weight: 500; }
+      .site-nav a { color: #64748b; text-decoration: none; }
+      .site-nav a:hover, .site-nav a.current { color: #0f172a; }
+      .site-nav a.current { font-weight: 600; }
+      .waitlist { color: #fff !important; text-decoration: none; border-radius: 999px; padding: 8px 20px; font-weight: 600; background: linear-gradient(90deg, #0d9488, #14b8a6); box-shadow: 0 10px 15px rgba(20,184,166,0.2); }
+      .menu-toggle { display: inline-flex; border: 0; background: transparent; padding: 4px; cursor: pointer; }
+      .mobile-menu { border-top: 1px solid #f1f5f9; background: #fff; padding: 8px 16px 20px; }
+      .mobile-menu[hidden] { display: none; }
+      .mobile-menu a { display: block; padding: 10px 0; color: #475569; text-decoration: none; font-weight: 500; }
+      .mobile-menu a.current { color: #0f766e; }
+      .mobile-menu .waitlist { display: inline-flex; margin-top: 8px; }
+      @media (min-width: 1024px) {
+        .bar { width: min(80rem, calc(100% - 96px)); }
+        .site-nav { display: flex; }
+        .menu-toggle, .mobile-menu { display: none; }
+      }
       .hero { background: linear-gradient(135deg, #0f172a, #134e4a); color: #fff; padding: 56px 0 48px; }
       .eyebrow { display: inline-block; margin: 0 0 12px; padding: 4px 10px; border: 1px solid rgba(153, 246, 228, 0.4); border-radius: 999px; color: #99f6e4; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
       h1 { font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.15; margin: 0 0 12px; }
@@ -55,13 +75,37 @@
   </head>
   <body>
     <header>
-      <div class="wrap">
-        <a class="brand" href="/">Tour <span>Bhook</span></a>
-        <nav>
-          <a href="/faqs">FAQs</a>
-          <a href="/privacy-policy">Privacy Policy</a>
-          <a href="/delete-account">Delete account</a>
+      <div class="bar">
+        <a class="brand" href="/">
+          <span class="brand-mark"><img src="/tb-mark.png" alt="" /></span>
+          <span>
+            <span class="brand-name">Tour <span>Bhook</span></span>
+            <span class="brand-sub">A Pramahar Technologies Product</span>
+          </span>
+        </a>
+        <nav class="site-nav" aria-label="Primary">
+          <a href="/">Home</a>
+          <a href="/?page=about">About us</a>
+          <a href="/?page=crewbhook">crewBhook</a>
+          <a href="/?page=partner">Partner</a>
+          <a href="/?page=ceo">CEO's Office</a>
+          <a class="current" href="/faqs" aria-current="page">FAQs</a>
+          <a href="/#contact">Contact</a>
+          <a class="waitlist" href="/#waitlist">Join Waitlist</a>
         </nav>
+        <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-menu" aria-label="Open menu">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+      </div>
+      <div class="mobile-menu" id="mobile-menu" hidden>
+        <a href="/">Home</a>
+        <a href="/?page=about">About us</a>
+        <a href="/?page=crewbhook">crewBhook</a>
+        <a href="/?page=partner">Partner</a>
+        <a href="/?page=ceo">CEO's Office</a>
+        <a class="current" href="/faqs" aria-current="page">FAQs</a>
+        <a href="/#contact">Contact</a>
+        <a class="waitlist" href="/#waitlist">Join Waitlist</a>
       </div>
     </header>
     <div class="hero">
@@ -219,5 +263,16 @@
         </nav>
       </div>
     </footer>
+    <script>
+      const menuButton = document.querySelector(".menu-toggle");
+      const mobileMenu = document.querySelector(".mobile-menu");
+      menuButton.addEventListener("click", () => {
+        const open = mobileMenu.hasAttribute("hidden");
+        if (open) mobileMenu.removeAttribute("hidden");
+        else mobileMenu.setAttribute("hidden", "");
+        menuButton.setAttribute("aria-expanded", open ? "true" : "false");
+        menuButton.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+      });
+    </script>
   </body>
 </html>
