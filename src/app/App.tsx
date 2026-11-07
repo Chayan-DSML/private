@@ -40,7 +40,8 @@ type Page =
   | "job-detail"
   | "roadmap"
   | "press"
-  | "ceo";
+  | "ceo"
+  | "faqs";
 
 const OFFICE_MAILTO = "mailto:info@tourbhook.com";
 
@@ -84,7 +85,23 @@ type Job = {
 const JOBS: Job[] = [];
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<Page>("home");
+  const [currentPage, setCurrentPage] = useState<Page>(() => {
+    if (typeof window === "undefined") return "home";
+    const path = window.location.pathname.replace(/\/$/, "") || "/";
+    if (path === "/faqs") return "faqs";
+    const requested = new URLSearchParams(window.location.search).get("page");
+    const pages: Page[] = [
+      "about",
+      "crewbhook",
+      "careers",
+      "partner",
+      "job-detail",
+      "roadmap",
+      "press",
+      "ceo",
+    ];
+    return pages.includes(requested as Page) ? (requested as Page) : "home";
+  });
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [waitlistSubmitted, setWaitlistSubmitted] =
     useState(false);
@@ -123,9 +140,9 @@ export default function App() {
   const sectionTarget = useRef<string | null>(null);
 
   useEffect(() => {
+    const path = window.location.pathname.replace(/\/$/, "") || "/";
     const requested = new URLSearchParams(window.location.search).get("page");
     const pages: Page[] = [
-      "home",
       "about",
       "crewbhook",
       "careers",
@@ -134,9 +151,14 @@ export default function App() {
       "roadmap",
       "press",
       "ceo",
+      "faqs",
     ];
     const hash = window.location.hash.replace("#", "");
     if (hash) sectionTarget.current = hash;
+    if (path === "/faqs") {
+      setCurrentPage("faqs");
+      return;
+    }
     if (requested && pages.includes(requested as Page) && requested !== "home") {
       setCurrentPage(requested as Page);
       return;
@@ -152,6 +174,18 @@ export default function App() {
   const navigateTo = (page: Page, section?: string) => {
     sectionTarget.current = section ?? null;
     setMobileMenuOpen(false);
+    const nextUrl =
+      page === "faqs"
+        ? "/faqs"
+        : page === "home"
+          ? section
+            ? `/#${section}`
+            : "/"
+          : section
+            ? `/?page=${page}#${section}`
+            : `/?page=${page}`;
+    const here = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (here !== nextUrl) window.history.pushState({}, "", nextUrl);
     if (page === currentPage) {
       if (section) {
         document.getElementById(section)?.scrollIntoView({
@@ -180,6 +214,32 @@ export default function App() {
       return () => cancelAnimationFrame(frame);
     }
     window.scrollTo(0, 0);
+  }, [currentPage]);
+
+  useEffect(() => {
+    const onPop = () => {
+      const path = window.location.pathname.replace(/\/$/, "") || "/";
+      if (path === "/faqs") {
+        setCurrentPage("faqs");
+        return;
+      }
+      const requested = new URLSearchParams(window.location.search).get("page");
+      const pages: Page[] = ["about", "crewbhook", "careers", "partner", "job-detail", "roadmap", "press", "ceo"];
+      setCurrentPage(requested && pages.includes(requested as Page) ? (requested as Page) : "home");
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  useEffect(() => {
+    document.title = currentPage === "faqs" ? "FAQs | TourBhook by PRAMAHAR" : "TourBhook by PRAMAHAR";
+    const link = document.querySelector('link[rel="canonical"]');
+    if (link) {
+      link.setAttribute(
+        "href",
+        currentPage === "faqs" ? "https://www.tourbhook.com/faqs" : "https://www.tourbhook.com/",
+      );
+    }
   }, [currentPage]);
 
   // Animate waitlist counter on mount
@@ -372,9 +432,12 @@ export default function App() {
             >
               CEO's Office
             </button>
-            <a href="/faqs" className="transition-colors hover:text-slate-900">
+            <button
+              onClick={() => navigateTo("faqs")}
+              className={`transition-colors hover:text-slate-900 ${currentPage === "faqs" ? "font-semibold text-slate-900" : ""}`}
+            >
               FAQs
-            </a>
+            </button>
             <button
               onClick={() => navigateTo("home", "contact")}
               className="transition-colors hover:text-slate-900"
@@ -431,9 +494,12 @@ export default function App() {
               >
                 CEO's Office
               </button>
-              <a href="/faqs" className="text-left font-medium text-slate-600">
+              <button
+                onClick={() => navigateTo("faqs")}
+                className={`text-left font-medium ${currentPage === "faqs" ? "text-teal-600" : "text-slate-600"}`}
+              >
                 FAQs
-              </a>
+              </button>
               <button
                 onClick={() => navigateTo("home", "contact")}
                 className="text-left font-medium text-slate-600"
@@ -919,9 +985,12 @@ export default function App() {
                 <p className="text-lg text-slate-500">
                   Everything you need to know about Tour Bhook
                 </p>
-                <a href="/faqs" className="mt-4 inline-flex font-semibold text-teal-700 hover:text-teal-800">
+                <button
+                  onClick={() => navigateTo("faqs")}
+                  className="mt-4 inline-flex font-semibold text-teal-700 hover:text-teal-800"
+                >
                   Read the full FAQ and comparison
-                </a>
+                </button>
               </div>
 
               <div className="space-y-4">
@@ -3028,8 +3097,86 @@ export default function App() {
           </div>
         )}
 
+        {currentPage === "faqs" && (
+          <div className="animate-in fade-in duration-500">
+            <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900 px-6 py-20 text-white">
+              <div className="mx-auto max-w-3xl text-center">
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-teal-300">
+                  FAQ and comparison
+                </div>
+                <h1 className="mb-4 text-4xl font-bold md:text-6xl">What TourBhook is built to do</h1>
+                <p className="text-lg text-slate-300">
+                  TourBhook is not another booking engine or a static travel log. It is the operating system for visual, effort-free, route-optimized travel planning: what to do on the ground, in an order that does not waste the day.
+                </p>
+              </div>
+            </div>
+            <div className="mx-auto max-w-3xl px-6 py-16">
+              <h2 className="mb-2 text-3xl font-bold text-slate-900">Frequently asked questions</h2>
+              <p className="mb-8 text-slate-500">These answers explain how TourBhook is different from booking sites, inbox organizers, and do-it-yourself map planners.</p>
+              <div className="space-y-4">
+                {[
+                  ["What makes TourBhook different from traditional travel booking sites like MakeMyTrip or Booking.com?", "Booking platforms focus purely on transactions: selling flight tickets, hotel rooms, or bus passes. Once a booking is confirmed, they do not help you figure out what to do hour by hour on the ground. TourBhook is built for post-booking execution. It handles spatial route optimization, laptop-friendly spot discovery, and cafe mapping so you do not waste time figuring out where to go next."],
+                  ["How is TourBhook different from inbox organizers like TripIt?", "Organizers like TripIt scan confirmation emails to build a chronological master timeline. That is useful as a digital filing cabinet, and it requires you to already know every place you plan to visit. TourBhook actively builds the itinerary, recommending micro-spots, hidden local gems, and an optimal daily flow based on style, pacing, and budget."],
+                  ["Why use TourBhook instead of DIY map planners like Wanderlog?", "Manual planners like Wanderlog place a map beside a document, and you still search, drag, drop, and check whether the day makes geographical sense. TourBhook automates that spatial logic. It groups spots into walking clusters, adjusts for transit time and opening hours, and prevents daily backtracking."],
+                  ["How does TourBhook's routing engine differ from standard mapping tools?", "Standard mapping apps and generic itineraries are often linear and ignore the optimal travel path, which leads to long transit times. TourBhook uses a routing engine that factors in geographical distance, traffic models, and sequence logic to generate a more efficient daily route."],
+                  ["How does TourBhook handle overwhelming, noisy online reviews?", "Instead of asking you to read hundreds of fragmented comments, TourBhook uses an AI review summarization engine (Phase 1). It distills community feedback into a short summary of the key pros and cons. Places with an average rating of 4.5 stars or higher are weighted and prioritized by the algorithm."],
+                  ["What happens when my day changes or I need a break?", "Unlike a static PDF or a rigid spreadsheet, TourBhook’s dynamic itinerary adjustment engine (Phase 2) builds in decision points. After a set number of activities, it suggests a break and routes you to a nearby top-rated cafe or restaurant, using the same 4.5-star priority."],
+                  ["Can I copy or clone itineraries built by other travelers?", "Yes. TourBhook has a 1-click clone and customize flow. You can take a verified itinerary from a local curator or a digital nomad and adapt it to your dates, budget, and preferences."],
+                ].map(([question, answer]) => (
+                  <details key={question} className="rounded-2xl border border-slate-200 bg-white shadow-sm" open={question.startsWith("What makes")}>
+                    <summary className="cursor-pointer list-none px-6 py-5 text-lg font-semibold text-slate-900">{question}</summary>
+                    <p className="border-t border-slate-100 px-6 py-4 text-slate-600">{answer}</p>
+                  </details>
+                ))}
+              </div>
+            </div>
+            <div id="comparison" className="bg-slate-50 px-6 py-16">
+              <div className="mx-auto max-w-6xl">
+                <h2 className="mb-2 text-3xl font-bold text-slate-900">How TourBhook compares</h2>
+                <p className="mb-8 max-w-3xl text-slate-500">TourBhook is focused on route-aware itineraries after you have booked. Booking checkout, receipt filing, offline map downloads, and group expense splitting are outside that job.</p>
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+                  <table className="min-w-[760px] w-full border-collapse text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-100 text-slate-500">
+                        <th className="px-4 py-3 font-semibold">Feature</th>
+                        <th className="px-4 py-3 font-semibold">OTAs such as MakeMyTrip and Booking</th>
+                        <th className="px-4 py-3 font-semibold">Booking organizers such as TripIt</th>
+                        <th className="px-4 py-3 font-semibold">DIY map planners such as Wanderlog</th>
+                        <th className="bg-teal-50 px-4 py-3 font-semibold text-teal-900">TourBhook</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        ["Primary focus", "Booking flights and hotels", "Storing confirmation receipts", "Manual map plotting", "Spatial and route-aware itineraries"],
+                        ["AI optimal routing", "None", "None", "Manual drag-and-drop", "Distance, traffic, and sequence logic"],
+                        ["AI review summarization", "None", "None", "None", "Instant summary of community feedback"],
+                        ["Dynamic breaks and pacing", "None", "None", "None", "Rest stops and nearby 4.5-star cafes"],
+                        ["Automated email ingestion", "None", "Yes, automatic receipt scraping", "Limited imports", "Omitted. The focus is ground discovery, not receipt filing."],
+                        ["Live global booking and payments", "Yes, native checkout", "None", "None", "Omitted. The focus is post-booking route execution."],
+                        ["Offline map downloads", "None", "None", "Yes, offline mode", "Omitted. Routes use live spatial feeds and community data."],
+                        ["Real-time group expense splitting", "None", "None", "Yes, shared costs", "Omitted. The focus is curated route optimization."],
+                        ["Content quality and moderation", "Standard user reviews", "None", "Standard moderation", "Strict zero-tolerance content shield"],
+                        ["Smart packing lists", "None", "None", "Static lists", "Climate and activity-aware packing"],
+                        ["1-click clone and edit", "Static blogs", "None", "Basic sharing", "Interactive community cloning"],
+                      ].map((row) => (
+                        <tr key={row[0]} className="border-b border-slate-100 align-top">
+                          <th className="px-4 py-3 font-semibold text-slate-900">{row[0]}</th>
+                          <td className="px-4 py-3 text-slate-600">{row[1]}</td>
+                          <td className="px-4 py-3 text-slate-600">{row[2]}</td>
+                          <td className="px-4 py-3 text-slate-600">{row[3]}</td>
+                          <td className="bg-teal-50 px-4 py-3 font-medium text-teal-900">{row[4]}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 404 Fallback */}
-        {!["home","about","crewbhook","careers","partner","job-detail","roadmap","press","ceo"].includes(currentPage) && (
+        {!["home","about","crewbhook","careers","partner","job-detail","roadmap","press","ceo","faqs"].includes(currentPage) && (
           <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center animate-in fade-in duration-500">
             <div className="mb-6 text-7xl">🗺️</div>
             <h1 className="mb-3 text-4xl font-bold text-slate-900">Page not found</h1>
@@ -3122,9 +3269,12 @@ export default function App() {
                   </button>
                 </li>
                 <li>
-                  <a href="/faqs" className="hover:text-teal-600">
+                  <button
+                    onClick={() => navigateTo("faqs")}
+                    className="hover:text-teal-600"
+                  >
                     FAQs
-                  </a>
+                  </button>
                 </li>
               </ul>
             </div>

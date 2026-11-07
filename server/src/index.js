@@ -482,10 +482,13 @@ export function createApp(pool, uploadDir) {
     ["/delete-account", "/delete-account/"],
     sendLegalPage("delete-account/index.html"),
   );
-  app.get(
-    ["/faqs", "/faqs/"],
-    sendLegalPage("faqs/index.html"),
-  );
+  app.get(["/faqs", "/faqs/"], (req, res, next) => {
+    const home = path.join(distDir, "index.html");
+    if (!fs.existsSync(home)) return next();
+    res.setHeader("Cache-Control", "public, max-age=0");
+    res.type("html");
+    return res.sendFile(home);
+  });
 
   if (fs.existsSync(path.join(distDir, "index.html"))) {
     app.use(express.static(distDir));

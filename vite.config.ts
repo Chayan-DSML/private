@@ -28,7 +28,7 @@ function legalPagePaths() {
         } else if (pathname === "/delete-account" || pathname === "/delete-account/") {
           req.url = `/delete-account/index.html${suffix}`;
         } else if (pathname === "/faqs" || pathname === "/faqs/") {
-          req.url = `/faqs/index.html${suffix}`;
+          req.url = `/index.html${suffix}`;
         }
         next();
       });
