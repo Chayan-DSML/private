@@ -3256,14 +3256,6 @@ export default function App() {
                     CEO's Office
                   </button>
                 </li>
-                <li>
-                  <button
-                    onClick={() => navigateTo("faqs")}
-                    className="hover:text-teal-600"
-                  >
-                    FAQs
-                  </button>
-                </li>
               </ul>
             </div>
             <div>
