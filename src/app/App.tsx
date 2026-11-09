@@ -433,12 +433,6 @@ export default function App() {
               CEO's Office
             </button>
             <button
-              onClick={() => navigateTo("faqs")}
-              className={`transition-colors hover:text-slate-900 ${currentPage === "faqs" ? "font-semibold text-slate-900" : ""}`}
-            >
-              FAQs
-            </button>
-            <button
               onClick={() => navigateTo("home", "contact")}
               className="transition-colors hover:text-slate-900"
             >
@@ -493,12 +487,6 @@ export default function App() {
                 className={`text-left font-medium ${currentPage === "ceo" ? "text-teal-600" : "text-slate-600"}`}
               >
                 CEO's Office
-              </button>
-              <button
-                onClick={() => navigateTo("faqs")}
-                className={`text-left font-medium ${currentPage === "faqs" ? "text-teal-600" : "text-slate-600"}`}
-              >
-                FAQs
               </button>
               <button
                 onClick={() => navigateTo("home", "contact")}
