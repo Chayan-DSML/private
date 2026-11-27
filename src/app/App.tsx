@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import logoImg from "../imports/image.png";
+import logoLight from "../imports/logo-light.png";
 import {
   Menu,
   Sparkles,
@@ -31,6 +31,7 @@ import {
   Gift,
 } from "lucide-react";
 import { postForm, postJson } from "./api";
+import { SeedGrowth } from "./components/SeedGrowth";
 
 type Page =
   | "home"
@@ -590,13 +591,11 @@ export default function App() {
             onClick={() => navigateTo("home")}
             className="group flex items-center gap-3 transition-opacity hover:opacity-90"
           >
-            <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-2xl bg-slate-900 p-2.5 shadow-lg shadow-slate-900/30 transition-transform duration-300 group-hover:scale-105">
-              <img
-                src={logoImg}
-                alt="Tour Bhook"
-                className="h-full w-full object-contain"
-              />
-            </div>
+            <img
+              src={logoLight}
+              alt="Tour Bhook"
+              className="h-12 w-auto"
+            />
             <div className="flex flex-col">
               <span className="text-2xl font-bold tracking-tight text-slate-900 text-left">
                 Tour{" "}
@@ -3462,6 +3461,7 @@ export default function App() {
             </div>
             <div className="mx-auto grid max-w-6xl gap-8 px-6 py-16 lg:grid-cols-[1.1fr_0.9fr]">
               <div>
+                <SeedGrowth amount={seedAmount} />
                 <div className="mb-8 grid gap-4 sm:grid-cols-3">
                   {[
                     ["1", "Choose an amount", "Anywhere from ₹100 to ₹10,00,000."],
@@ -3572,13 +3572,11 @@ export default function App() {
                 onClick={() => navigateTo("home")}
                 className="group mb-4 flex items-center gap-2 transition-opacity hover:opacity-90"
               >
-                <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-xl bg-slate-900 p-2 shadow-sm">
-                  <img
-                    src={logoImg}
-                    alt="Tour Bhook"
-                    className="h-full w-full object-contain"
-                  />
-                </div>
+                <img
+                  src={logoLight}
+                  alt="Tour Bhook"
+                  className="h-10 w-auto"
+                />
                 <span className="text-xl font-bold tracking-tight text-slate-900">
                   Tour{" "}
                   <span className="text-teal-600">Bhook</span>
