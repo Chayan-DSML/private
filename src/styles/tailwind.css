@@ -2,3 +2,40 @@
 @source '../**/*.{js,ts,jsx,tsx}';
 
 @import 'tw-animate-css';
+
+@theme {
+  --font-sans: "Montserrat", sans-serif;
+  --color-teal-50: #e8fbfe;
+  --color-teal-100: #c5f6fc;
+  --color-teal-200: #8eecf8;
+  --color-teal-300: #4adff3;
+  --color-teal-400: #14d4ee;
+  --color-teal-500: #00d2eb;
+  --color-teal-600: #0097b3;
+  --color-teal-700: #007892;
+  --color-teal-800: #005c70;
+  --color-teal-900: #004454;
+  --color-teal-950: #002c38;
+  --color-emerald-50: #e8fbfe;
+  --color-emerald-100: #c5f6fc;
+  --color-emerald-200: #8eecf8;
+  --color-emerald-300: #4adff3;
+  --color-emerald-400: #00d2eb;
+  --color-emerald-500: #0097b3;
+  --color-emerald-600: #007892;
+  --color-emerald-700: #005c70;
+  --color-emerald-800: #004454;
+  --color-emerald-900: #002c38;
+  --color-emerald-950: #001920;
+  --color-green-50: #e8fbfe;
+  --color-green-100: #c5f6fc;
+  --color-green-200: #8eecf8;
+  --color-green-300: #4adff3;
+  --color-green-400: #14d4ee;
+  --color-green-500: #00d2eb;
+  --color-green-600: #0097b3;
+  --color-green-700: #007892;
+  --color-green-800: #005c70;
+  --color-green-900: #004454;
+  --color-green-950: #002c38;
+}

@@ -1,14 +1,18 @@
 import { useState, useEffect, useRef } from "react";
-import logoImg from "../imports/image.png";
+import logoLight from "../imports/logo-light.png";
+import logoDark from "../imports/logo-dark.png";
 import {
   Menu,
+  Moon,
   Sparkles,
   Zap,
   MessageSquare,
   Shield,
   Mail,
   Instagram,
+  Linkedin,
   Twitter,
+  Youtube,
   X,
   CheckCircle,
   MapPin,
@@ -22,14 +26,17 @@ import {
   Users,
   ArrowRight,
   Upload,
+  Sun,
   Building2,
   Copy,
   Check,
   Rocket,
   Newspaper,
   ExternalLink,
+  Gift,
 } from "lucide-react";
 import { postForm, postJson } from "./api";
+import { SeedGrowth } from "./components/SeedGrowth";
 
 type Page =
   | "home"
@@ -41,7 +48,9 @@ type Page =
   | "roadmap"
   | "press"
   | "ceo"
-  | "faqs";
+  | "faqs"
+  | "pulse"
+  | "seed";
 
 const OFFICE_MAILTO = "mailto:info@tourbhook.com";
 
@@ -84,24 +93,314 @@ type Job = {
 
 const JOBS: Job[] = [];
 
-export default function App() {
-  const [currentPage, setCurrentPage] = useState<Page>(() => {
-    if (typeof window === "undefined") return "home";
-    const path = window.location.pathname.replace(/\/$/, "") || "/";
-    if (path === "/faqs") return "faqs";
-    const requested = new URLSearchParams(window.location.search).get("page");
-    const pages: Page[] = [
-      "about",
-      "crewbhook",
-      "careers",
-      "partner",
-      "job-detail",
-      "roadmap",
-      "press",
-      "ceo",
-    ];
-    return pages.includes(requested as Page) ? (requested as Page) : "home";
+const PATH_PAGES: Partial<Record<Page, string>> = {
+  faqs: "/faqs",
+  pulse: "/pulsebhook",
+  seed: "/seedbhook",
+};
+
+const QUERY_PAGES: Page[] = [
+  "about",
+  "crewbhook",
+  "careers",
+  "partner",
+  "job-detail",
+  "roadmap",
+  "press",
+  "ceo",
+];
+
+function pageFromLocation(): Page {
+  return locationState().page;
+}
+
+function locationState(): { page: Page; pulseSlug: string | null } {
+  if (typeof window === "undefined") return { page: "home", pulseSlug: null };
+  const path = window.location.pathname.replace(/\/$/, "") || "/";
+  if (path === "/pulsebhook" || path.startsWith("/pulsebhook/")) {
+    const raw = path === "/pulsebhook" ? "" : path.slice("/pulsebhook/".length);
+    return { page: "pulse", pulseSlug: raw ? decodeURIComponent(raw) : null };
+  }
+  const fromPath = (Object.entries(PATH_PAGES) as [Page, string][]).find(
+    ([, pathname]) => pathname === path,
+  );
+  if (fromPath) return { page: fromPath[0], pulseSlug: null };
+  const requested = new URLSearchParams(window.location.search).get("page");
+  const page = QUERY_PAGES.includes(requested as Page) ? (requested as Page) : "home";
+  return { page, pulseSlug: null };
+}
+
+function pathForPage(page: Page, section?: string) {
+  const pathname = PATH_PAGES[page];
+  if (pathname) return pathname;
+  if (page === "home") return section ? `/#${section}` : "/";
+  return section ? `/?page=${page}#${section}` : `/?page=${page}`;
+}
+
+type PulseSection = {
+  heading: string;
+  paragraphs: string[];
+  website?: { label: string; href: string };
+};
+
+type PulseArticle = {
+  slug: string;
+  date: string;
+  title: string;
+  dek?: string;
+  image?: string;
+  imageAlt?: string;
+  sections: PulseSection[];
+};
+
+const PULSE_ARTICLES: PulseArticle[] = [
+  {
+    slug: "beyond-bookings",
+    date: "27 November 2026",
+    title:
+      "How TourBhook Is Building A Budget-First TravelTech Ecosystem For Indian Travellers",
+    dek: "The emerging travel-tech startup aims to integrate personalised itineraries, budget-oriented planning, genuine reviews and community-led travel discovery.",
+    image: "/pulse/budget-first-ecosystem.jpg",
+    imageAlt:
+      "TourBhook graphic of a traveller above a hill town, with the app and budget-first planning, reviews, and traveller communities",
+    sections: [
+      {
+        heading: "",
+        paragraphs: [
+          "India's travel-tech industry has transformed how consumers book flights, accommodation and holiday packages. However, the process of deciding where to travel, understanding the actual cost of a journey and identifying reliable recommendations continues to present challenges.",
+          "For many travellers, planning a single trip involves switching between booking platforms, mapping services, social media, travel blogs and online communities.",
+          "TourBhook, an emerging Indian travel-tech startup founded by Chayan Agarwal, is looking to address this fragmentation by developing a travel ecosystem centred around individual preferences, affordability and trustworthy information.",
+        ],
+      },
+      {
+        heading: "Solving The Decision-Making Gap In Travel",
+        paragraphs: [
+          "While online travel platforms have simplified transactions, travellers still need to make several decisions before reaching the booking stage.",
+          "Which destination fits their budget? How much should they allocate towards accommodation and transportation? Which attractions are worth visiting? Are online recommendations based on genuine experiences or paid promotions?",
+          "These questions become particularly important for students, solo travellers, young professionals and budget-conscious families.",
+          "TourBhook's approach is to bring these considerations into a more connected travel-planning experience, reducing the dependence on scattered information.",
+        ],
+      },
+      {
+        heading: "Building A Budget-First Planning Experience",
+        paragraphs: [
+          "One of TourBhook's central product propositions is budget-oriented personalisation.",
+          "Instead of beginning exclusively with destinations, accommodation options or travel packages, the platform aims to incorporate a traveller's available budget into the planning process itself.",
+          "The intended experience considers several components of a journey, including transportation, accommodation, food, attractions and local experiences.",
+          "By connecting these considerations with individual preferences, TourBhook aims to help users develop more practical itineraries and make informed decisions before committing to travel expenses.",
+          "The objective is not simply to recommend cheaper alternatives, but to help travellers understand how different choices affect their overall journey.",
+        ],
+      },
+      {
+        heading: "Connecting Travel Planning With Social Discovery",
+        paragraphs: [
+          "Another component of TourBhook's product strategy is SocialBhook, a travel-focused discovery and community experience.",
+          "SocialBhook is designed around travel content, destination discovery and opportunities for travellers to connect through travel groups.",
+          "The concept is particularly relevant to solo travellers who may be interested in discovering new destinations, learning from other people's experiences or connecting with like-minded individuals.",
+          "By bringing social discovery closer to the planning experience, TourBhook intends to reduce the disconnect between travel inspiration and practical execution.",
+          "Rather than treating travel content solely as entertainment, the startup sees it as a potential starting point for informed travel decisions.",
+        ],
+      },
+      {
+        heading: "Addressing The Trust Deficit In Travel Reviews",
+        paragraphs: [
+          "The increasing volume of promotional travel content has made it more difficult for consumers to distinguish genuine recommendations from commercial endorsements.",
+          "TourBhook aims to build a review ecosystem that encourages travellers to share authentic experiences and practical information about the places they visit.",
+          "The longer-term challenge will involve developing effective moderation, transparent review policies and mechanisms that discourage misleading content.",
+          "For the startup, trust is intended to become a core product principle rather than an isolated feature.",
+        ],
+      },
+      {
+        heading: "From A Personal Experience To A TravelTech Product",
+        paragraphs: [
+          "The idea behind TourBhook originated in February 2025, when Agarwal travelled to Jaipur for a week with a budget of ₹5,000.",
+          "By using public transportation and affordable dormitory accommodation, he reportedly spent approximately ₹300–₹400 on local transportation and around ₹1,500 on accommodation.",
+          "The experience highlighted the possibility of affordable travel, but also revealed how difficult it could be to access reliable information about expenses, transportation and local experiences.",
+          "This became the starting point for developing a product focused on practical travel planning.",
+        ],
+      },
+      {
+        heading: "Product Development And The Road Ahead",
+        paragraphs: [
+          "Developed under Pramahar, TourBhook is currently in the early stages of its product journey.",
+          "The startup's roadmap focuses on bringing together multiple aspects of travel through a connected digital experience, including personalised planning, destination discovery, community interaction and trustworthy recommendations.",
+          "As the platform evolves, its ability to deliver accurate travel information, demonstrate measurable user value and maintain the credibility of community-generated content will be important factors in establishing its competitive position.",
+          "The broader opportunity for TourBhook lies in transforming fragmented travel research into a more accessible and structured planning experience.",
+          "In an increasingly competitive travel-tech market, the startup's success will ultimately depend on whether its budget-first approach translates into better decisions and tangible outcomes for travellers.",
+        ],
+      },
+      {
+        heading: "About TourBhook",
+        paragraphs: [
+          "TourBhook is an emerging Indian travel-tech platform focused on personalised travel planning, budget accessibility, destination discovery and community-driven travel information.",
+        ],
+        website: { label: "www.tourbhook.com", href: "https://www.tourbhook.com" },
+      },
+    ],
+  },
+  {
+    slug: "jaipur-vision",
+    date: "November 2026",
+    title: "A Founder’s Vision for Simpler Budget Travel",
+    image: "/pulse/chayan-agarwal.jpg",
+    imageAlt: "Chayan Agarwal standing in front of the TourBhook sign",
+    sections: [
+    {
+      heading: "A trip that sparked an idea",
+      paragraphs: [
+        "In February 2025, a Jaipur trip planned around a ₹5,000 budget became the starting point for a bigger question: why does planning an affordable journey often require travellers to piece together information from so many different places?",
+        "For Chayan Agarwal, the experience highlighted the friction between finding a destination and making practical decisions about what a trip might actually cost. That gap inspired the idea for TourBhook, a travel-tech platform being developed to help people explore travel options with greater attention to their budgets and preferences.",
+        "The ambition is straightforward: make travel discovery and planning feel less fragmented, especially for people who want to travel thoughtfully without losing control of their spending.",
+      ],
+    },
+    {
+      heading: "Building the idea from the ground up",
+      paragraphs: [
+        "Chayan began working independently on the TourBhook concept in November 2025. Like many early-stage founders, he had to translate a personal experience into a product direction, consider which problems to tackle first, and balance a broader vision with the realities of launching an initial version.",
+        "TourBhook is a product developed under PRAMAHAR, its parent company. The consumer-facing identity, however, is TourBhook: the name through which the team hopes travellers will discover and engage with the platform.",
+        "The first release is intended to establish a practical foundation. Rather than claiming to solve every aspect of travel planning immediately, the team plans to develop more advanced capabilities over time, guided by user needs and feedback.",
+      ],
+    },
+    {
+      heading: "The people behind the journey",
+      paragraphs: [
+        "While Chayan Agarwal began building TourBhook independently in November 2025, he credits his partner, Harshita Jhunjhunwala, for playing an important role in shaping the journey.",
+        "Beyond providing emotional encouragement, Harshita actively contributed to refining the original concept, brainstorming product features, and exploring ways to make the platform more useful for travellers. Her consistent belief in Chayan's vision helped him navigate the uncertainties of building a startup from the ground up.",
+        "Chayan also acknowledges the encouragement and support of his parents, who stood by him throughout his entrepreneurial journey. Together, these contributions form an important part of the story behind the product, without changing the distinction between its founder and those who supported its development.",
+      ],
+    },
+    {
+      heading: "A budget-conscious approach to travel",
+      paragraphs: [
+        "Travel inspiration is easy to find online; turning inspiration into an actionable plan can be harder. Travellers may have to compare destinations, activities, local information, and costs across multiple sources before they can decide what suits them.",
+        "TourBhook aims to address that experience by putting budget awareness and personal preferences closer to the centre of travel planning. Its positioning is not that it already offers every advanced feature, but that it is being built around a clear user problem and a roadmap for improving the experience.",
+        "That distinction matters for an early-stage product: a credible launch story is as much about the problem being tackled as it is about the features available on day one.",
+      ],
+    },
+    {
+      heading: "Investment and growth plans",
+      paragraphs: [
+        "The TourBhook initiative began with ₹10 lakh in founder capital and has outlined a separate, additional ₹30 lakh planned investment for its next phase. Of that proposed allocation, ₹12 lakh is earmarked for product development, application improvements, and future features; the remaining ₹18 lakh is intended for brand building, growth marketing, and user acquisition.",
+        "These figures describe the stated investment plan, has already been received. The allocation reflects the team’s intention to develop the product while introducing the TourBhook brand to prospective users.",
+      ],
+    },
+    {
+      heading: "Looking ahead to launch",
+      paragraphs: [
+        "TourBhook is targeting an official launch on November 30, 2026. The initial version is expected to be relatively basic, with further enhancements planned as the team learns from how travellers use the platform.",
+        "For Chayan, the journey from a ₹5,000 Jaipur trip to a travel-tech product is rooted in a familiar challenge: making travel decisions that fit real budgets. Whether TourBhook can turn that insight into a useful everyday planning experience will be shaped by its execution, the feedback it receives, and the trust it builds with travellers.",
+      ],
+    },
+  ],
+  },
+];
+
+const SEED_MIN = 100;
+const SEED_MAX = 1_000_000;
+const SEED_GOAL = 1_00_00_000;
+const SEED_EXAMPLES = [100, 1_200, 12_000, 1_00_000, 10_00_000];
+
+function loadRazorpay() {
+  if (typeof window === "undefined") return Promise.resolve(false);
+  if (window.Razorpay) return Promise.resolve(true);
+  return new Promise<boolean>((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
   });
+}
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: Record<string, unknown>) => {
+      open: () => void;
+      on: (event: string, handler: () => void) => void;
+    };
+  }
+}
+
+function formatInr(amount: number) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+function clampSeedAmount(value: number) {
+  if (!Number.isFinite(value)) return SEED_MIN;
+  const stepped = Math.round(value / 100) * 100;
+  return Math.min(SEED_MAX, Math.max(SEED_MIN, stepped));
+}
+
+function sliderFromAmount(amount: number) {
+  const min = Math.log(SEED_MIN);
+  const max = Math.log(SEED_MAX);
+  const clamped = Math.min(SEED_MAX, Math.max(SEED_MIN, amount));
+  return Math.round(((Math.log(clamped) - min) / (max - min)) * 1000);
+}
+
+function amountFromSlider(position: number) {
+  const min = Math.log(SEED_MIN);
+  const max = Math.log(SEED_MAX);
+  const value = Math.exp(min + (position / 1000) * (max - min));
+  return clampSeedAmount(value);
+}
+
+function requestDeviceLocation() {
+  return new Promise<{ latitude: number; longitude: number }>((resolve, reject) => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      reject(new Error("Location access is required, and this browser cannot share it."));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) =>
+        resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        }),
+      () => reject(new Error("Location access is required. Allow location to continue.")),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60_000 },
+    );
+  });
+}
+
+export default function App() {
+  const initialLocation = locationState();
+  const [currentPage, setCurrentPage] = useState<Page>(initialLocation.page);
+  const [pulseSlug, setPulseSlug] = useState<string | null>(initialLocation.pulseSlug);
+  const [pulseReads, setPulseReads] = useState<Record<string, number>>({});
+  const incomingReferral = useRef(
+    typeof window === "undefined"
+      ? ""
+      : (new URLSearchParams(window.location.search).get("ref") || "").trim().toLowerCase(),
+  );
+  const [referralGateOpen, setReferralGateOpen] = useState(
+    () => incomingReferral.current.length > 0,
+  );
+  const [gateEmail, setGateEmail] = useState("");
+  const [gateError, setGateError] = useState("");
+  const [gatePending, setGatePending] = useState(false);
+  const [gateLocation, setGateLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+  const [referralOffer, setReferralOffer] = useState<{
+    code: string;
+    url: string;
+    count: number;
+    referredByCode: string | null;
+    alreadyJoined: boolean;
+  } | null>(null);
+  const [seedAmount, setSeedAmount] = useState(1200);
+  const [seedAmountInput, setSeedAmountInput] = useState("1200");
+  const [seedSubmitted, setSeedSubmitted] = useState(false);
+  const [seedError, setSeedError] = useState("");
+  const [seedPending, setSeedPending] = useState(false);
+  const [seedRaised, setSeedRaised] = useState(0);
+  const [seedAccepted, setSeedAccepted] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [waitlistSubmitted, setWaitlistSubmitted] =
     useState(false);
@@ -119,10 +418,14 @@ export default function App() {
   const [partnerSubmitted, setPartnerSubmitted] = useState(false);
   const [partnerSlider, setPartnerSlider] = useState(20);
   const [referralCopied, setReferralCopied] = useState(false);
-  const [featureVotes, setFeatureVotes] = useState<Record<string, boolean>>({});
+  const [featureVotes, setFeatureVotes] = useState<Record<string, number>>({});
   const [wishlistSubmitted, setWishlistSubmitted] = useState(false);
   const [wishlistIdea, setWishlistIdea] = useState("");
   const [cookieDismissed, setCookieDismissed] = useState(false);
+  const [dark, setDark] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("tourbhook-theme") === "dark";
+  });
   const [waitlistError, setWaitlistError] = useState("");
   const [waitlistPending, setWaitlistPending] = useState(false);
   const [contactError, setContactError] = useState("");
@@ -140,27 +443,47 @@ export default function App() {
   const sectionTarget = useRef<string | null>(null);
 
   useEffect(() => {
-    const path = window.location.pathname.replace(/\/$/, "") || "/";
-    const requested = new URLSearchParams(window.location.search).get("page");
-    const pages: Page[] = [
-      "about",
-      "crewbhook",
-      "careers",
-      "partner",
-      "job-detail",
-      "roadmap",
-      "press",
-      "ceo",
-      "faqs",
-    ];
-    const hash = window.location.hash.replace("#", "");
-    if (hash) sectionTarget.current = hash;
-    if (path === "/faqs") {
-      setCurrentPage("faqs");
+    document.documentElement.classList.toggle("dark", dark);
+    localStorage.setItem("tourbhook-theme", dark ? "dark" : "light");
+  }, [dark]);
+
+  const requestGateLocation = () => {
+    if (!navigator.geolocation) {
+      setGateError("Location access is required, and this browser cannot share it.");
       return;
     }
-    if (requested && pages.includes(requested as Page) && requested !== "home") {
-      setCurrentPage(requested as Page);
+    setGateError("");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setGateLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+        setGateError("");
+      },
+      () => {
+        setGateError("Location access is required. Allow location to open the site.");
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    );
+  };
+
+  useEffect(() => {
+    if (!referralGateOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    requestGateLocation();
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [referralGateOpen]);
+
+  useEffect(() => {
+    const hash = window.location.hash.replace("#", "");
+    if (hash) sectionTarget.current = hash;
+    const page = pageFromLocation();
+    if (page !== "home") {
+      setCurrentPage(page);
       return;
     }
     if (hash) {
@@ -174,19 +497,11 @@ export default function App() {
   const navigateTo = (page: Page, section?: string) => {
     sectionTarget.current = section ?? null;
     setMobileMenuOpen(false);
-    const nextUrl =
-      page === "faqs"
-        ? "/faqs"
-        : page === "home"
-          ? section
-            ? `/#${section}`
-            : "/"
-          : section
-            ? `/?page=${page}#${section}`
-            : `/?page=${page}`;
+    const nextUrl = pathForPage(page, section);
     const here = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     if (here !== nextUrl) window.history.pushState({}, "", nextUrl);
-    if (page === currentPage) {
+    setPulseSlug(null);
+    if (page === currentPage && !pulseSlug) {
       if (section) {
         document.getElementById(section)?.scrollIntoView({
           behavior: "smooth",
@@ -199,6 +514,17 @@ export default function App() {
       return;
     }
     setCurrentPage(page);
+  };
+
+  const openPulse = (slug?: string) => {
+    sectionTarget.current = null;
+    setMobileMenuOpen(false);
+    const nextUrl = slug ? `/pulsebhook/${encodeURIComponent(slug)}` : "/pulsebhook";
+    const here = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (here !== nextUrl) window.history.pushState({}, "", nextUrl);
+    setPulseSlug(slug ?? null);
+    setCurrentPage("pulse");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   useEffect(() => {
@@ -214,33 +540,87 @@ export default function App() {
       return () => cancelAnimationFrame(frame);
     }
     window.scrollTo(0, 0);
+  }, [currentPage, pulseSlug]);
+
+  useEffect(() => {
+    if (currentPage !== "pulse") return;
+    let ignore = false;
+    const slug = pulseSlug;
+    const request = slug
+      ? fetch(`/api/pulse-reads/${encodeURIComponent(slug)}`, { method: "POST" })
+      : fetch("/api/pulse-reads");
+    request
+      .then((response) => response.json())
+      .then((data) => {
+        if (ignore) return;
+        if (slug && Number.isFinite(Number(data.reads))) {
+          setPulseReads((current) => ({ ...current, [slug]: Number(data.reads) }));
+          return;
+        }
+        if (data.reads && typeof data.reads === "object") setPulseReads(data.reads);
+      })
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, [currentPage, pulseSlug]);
+
+  useEffect(() => {
+    if (currentPage !== "seed") return;
+    let ignore = false;
+    fetch("/api/seed-progress")
+      .then((response) => response.json())
+      .then((data) => {
+        if (!ignore) setSeedRaised(Number(data.raised) || 0);
+      })
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, [currentPage, seedSubmitted]);
+
+  useEffect(() => {
+    if (currentPage !== "roadmap") return;
+    let ignore = false;
+    fetch("/api/feature-votes")
+      .then((response) => response.json())
+      .then((data) => {
+        if (!ignore && data.votes) setFeatureVotes(data.votes);
+      })
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
   }, [currentPage]);
 
   useEffect(() => {
     const onPop = () => {
-      const path = window.location.pathname.replace(/\/$/, "") || "/";
-      if (path === "/faqs") {
-        setCurrentPage("faqs");
-        return;
-      }
-      const requested = new URLSearchParams(window.location.search).get("page");
-      const pages: Page[] = ["about", "crewbhook", "careers", "partner", "job-detail", "roadmap", "press", "ceo"];
-      setCurrentPage(requested && pages.includes(requested as Page) ? (requested as Page) : "home");
+      const next = locationState();
+      setCurrentPage(next.page);
+      setPulseSlug(next.pulseSlug);
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
   useEffect(() => {
-    document.title = currentPage === "faqs" ? "FAQs | TourBhook by PRAMAHAR" : "TourBhook by PRAMAHAR";
+    const pulseArticle = PULSE_ARTICLES.find((article) => article.slug === pulseSlug);
+    const titles: Partial<Record<Page, string>> = {
+      faqs: "FAQs | TourBhook by PRAMAHAR",
+      pulse: pulseArticle
+        ? `${pulseArticle.title} | pulseBhook`
+        : "pulseBhook | TourBhook by PRAMAHAR",
+      seed: "seedBhook | TourBhook by PRAMAHAR",
+    };
+    document.title = titles[currentPage] ?? "TourBhook by PRAMAHAR";
     const link = document.querySelector('link[rel="canonical"]');
     if (link) {
-      link.setAttribute(
-        "href",
-        currentPage === "faqs" ? "https://www.tourbhook.com/faqs" : "https://www.tourbhook.com/",
-      );
+      const path = pulseArticle
+        ? `/pulsebhook/${pulseArticle.slug}`
+        : (PATH_PAGES[currentPage] ?? "/");
+      link.setAttribute("href", `https://www.tourbhook.com${path}`);
     }
-  }, [currentPage]);
+  }, [currentPage, pulseSlug]);
 
   // Animate waitlist counter on mount
   useEffect(() => {
@@ -263,18 +643,141 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
+  const submitReferralGate = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const email = gateEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setGateError("Enter a valid email address");
+      return;
+    }
+    if (!gateLocation) {
+      setGateError("Location access is required. Allow location to open the site.");
+      return;
+    }
+    setGateError("");
+    setGatePending(true);
+    try {
+      const data = await postJson("/api/waitlist", {
+        email,
+        referralCode: incomingReferral.current,
+        latitude: gateLocation.latitude,
+        longitude: gateLocation.longitude,
+      });
+      setReferralOffer({
+        code: data.referralCode,
+        url: data.referralUrl,
+        count: Number(data.referralCount) || 0,
+        referredByCode: data.referredByCode || null,
+        alreadyJoined: Boolean(data.alreadyJoined),
+      });
+      setWaitlistSubmitted(true);
+      setReferralGateOpen(false);
+    } catch (err) {
+      setGateError(err instanceof Error ? err.message : "Could not save that email");
+    } finally {
+      setGatePending(false);
+    }
+  };
+
   const handleWaitlistSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const email = String(new FormData(e.currentTarget).get("email") || "");
     setWaitlistError("");
     setWaitlistPending(true);
     try {
-      await postJson("/api/waitlist", { email });
+      const place = gateLocation ?? (await requestDeviceLocation());
+      const data = await postJson("/api/waitlist", {
+        email,
+        referralCode: incomingReferral.current,
+        latitude: place.latitude,
+        longitude: place.longitude,
+      });
+      setReferralOffer({
+        code: data.referralCode,
+        url: data.referralUrl,
+        count: Number(data.referralCount) || 0,
+        referredByCode: data.referredByCode || null,
+        alreadyJoined: Boolean(data.alreadyJoined),
+      });
       setWaitlistSubmitted(true);
     } catch (err) {
       setWaitlistError(err instanceof Error ? err.message : "Could not join the waitlist");
     } finally {
       setWaitlistPending(false);
+    }
+  };
+
+  const applySeedAmount = (value: number) => {
+    const next = clampSeedAmount(value);
+    setSeedAmount(next);
+    setSeedAmountInput(String(next));
+    return next;
+  };
+
+  const handleSeedSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    const amount = applySeedAmount(Number(seedAmountInput));
+    const name = String(data.get("name") || "");
+    const email = String(data.get("email") || "");
+    setSeedError("");
+    setSeedPending(true);
+    try {
+      const place = await requestDeviceLocation();
+      const order = await postJson("/api/seed-orders", {
+        name,
+        email,
+        amount,
+        note: String(data.get("note") || ""),
+        nonRefundable: true,
+        latitude: place.latitude,
+        longitude: place.longitude,
+      });
+      const ready = await loadRazorpay();
+      if (!ready || !window.Razorpay) {
+        throw new Error("Could not open the payment window");
+      }
+      setSeedPending(false);
+      await new Promise<void>((resolve, reject) => {
+        const checkout = new window.Razorpay!({
+          key: order.keyId,
+          amount: order.amountPaise,
+          currency: "INR",
+          name: "TourBhook",
+          description: "seedBhook",
+          order_id: order.orderId,
+          prefill: { name, email },
+          handler: async (response: {
+            razorpay_order_id: string;
+            razorpay_payment_id: string;
+            razorpay_signature: string;
+          }) => {
+            try {
+              await postJson("/api/seed-payments/verify", {
+                pledgeId: order.pledgeId,
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+              });
+              setSeedSubmitted(true);
+              resolve();
+            } catch (err) {
+              reject(err);
+            }
+          },
+          modal: {
+            ondismiss: () => resolve(),
+          },
+        });
+        checkout.on("payment.failed", () => {
+          reject(new Error("Payment did not go through. You can try again."));
+        });
+        checkout.open();
+      });
+    } catch (err) {
+      setSeedError(err instanceof Error ? err.message : "Could not start the payment");
+    } finally {
+      setSeedPending(false);
     }
   };
 
@@ -284,10 +787,13 @@ export default function App() {
     setContactError("");
     setContactPending(true);
     try {
+      const place = await requestDeviceLocation();
       await postJson("/api/contact", {
         name: String(data.get("name") || ""),
         email: String(data.get("email") || ""),
         message: String(data.get("message") || ""),
+        latitude: place.latitude,
+        longitude: place.longitude,
       });
       setContactSubmitted(true);
     } catch (err) {
@@ -307,6 +813,9 @@ export default function App() {
     setApplicationError("");
     setApplicationPending(true);
     try {
+      const place = await requestDeviceLocation();
+      data.set("latitude", String(place.latitude));
+      data.set("longitude", String(place.longitude));
       await postForm("/api/applications", data);
       setApplicationSubmitted(true);
     } catch (err) {
@@ -322,11 +831,14 @@ export default function App() {
     setPartnerError("");
     setPartnerPending(true);
     try {
+      const place = await requestDeviceLocation();
       await postJson("/api/partners", {
         fullName: String(data.get("fullName") || ""),
         phone: String(data.get("phone") || ""),
         experience: String(data.get("experience") || ""),
         location: String(data.get("location") || ""),
+        latitude: place.latitude,
+        longitude: place.longitude,
       });
       setPartnerSubmitted(true);
     } catch (err) {
@@ -342,11 +854,14 @@ export default function App() {
     setCeoError("");
     setCeoPending(true);
     try {
+      const place = await requestDeviceLocation();
       await postJson("/api/ceo-feedback", {
         name: String(data.get("name") || ""),
         email: String(data.get("email") || ""),
         topic: String(data.get("topic") || ""),
         message: String(data.get("message") || ""),
+        latitude: place.latitude,
+        longitude: place.longitude,
       });
       setCeoSubmitted(true);
     } catch (err) {
@@ -380,19 +895,14 @@ export default function App() {
             onClick={() => navigateTo("home")}
             className="group flex items-center gap-3 transition-opacity hover:opacity-90"
           >
-            <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-2xl bg-slate-900 p-2.5 shadow-lg shadow-slate-900/30 transition-transform duration-300 group-hover:scale-105">
-              <img
-                src={logoImg}
-                alt="Tour Bhook"
-                className="h-full w-full object-contain"
-              />
-            </div>
+            <img
+              src={dark ? logoDark : logoLight}
+              alt="TourBhook"
+              className="h-12 w-auto"
+            />
             <div className="flex flex-col">
               <span className="text-2xl font-bold tracking-tight text-slate-900 text-left">
-                Tour{" "}
-                <span className="bg-gradient-to-r from-teal-600 to-teal-500 bg-clip-text text-transparent">
-                  Bhook
-                </span>
+                Tour<span className="bg-gradient-to-r from-teal-600 to-teal-500 bg-clip-text text-transparent">Bhook</span>
               </span>
               <span className="text-[10px] text-slate-500 -mt-1">
                 A Pramahar Technologies Product
@@ -402,18 +912,23 @@ export default function App() {
 
           <div className="hidden items-center gap-x-5 text-sm font-medium text-slate-500 lg:flex">
             <button
-              onClick={() => navigateTo("home")}
-              className={`transition-colors hover:text-slate-900 ${currentPage === "home" ? "font-semibold text-slate-900" : ""}`}
-            >
-              Home
-            </button>
-            <button
               onClick={() => navigateTo("about")}
               className={`transition-colors hover:text-slate-900 ${currentPage === "about" ? "font-semibold text-slate-900" : ""}`}
             >
               About us
             </button>
-
+            <button
+              onClick={() => navigateTo("pulse")}
+              className={`transition-colors hover:text-slate-900 ${currentPage === "pulse" ? "font-semibold text-slate-900" : ""}`}
+            >
+              pulseBhook
+            </button>
+            <button
+              onClick={() => navigateTo("seed")}
+              className={`transition-colors hover:text-slate-900 ${currentPage === "seed" ? "font-semibold text-slate-900" : ""}`}
+            >
+              seedBhook
+            </button>
             <button
               onClick={() => navigateTo("crewbhook")}
               className={`transition-colors hover:text-slate-900 ${currentPage === "crewbhook" || currentPage === "careers" || currentPage === "job-detail" ? "font-semibold text-slate-900" : ""}`}
@@ -433,16 +948,12 @@ export default function App() {
               CEO's Office
             </button>
             <button
-              onClick={() => navigateTo("home", "contact")}
-              className="transition-colors hover:text-slate-900"
+              type="button"
+              aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+              onClick={() => setDark((on) => !on)}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-700 transition hover:border-teal-500 hover:text-teal-600"
             >
-              Contact
-            </button>
-            <button
-              onClick={() => navigateTo("home", "waitlist")}
-              className="rounded-full bg-gradient-to-r from-teal-600 to-teal-500 px-5 py-2 font-semibold text-white shadow-lg shadow-teal-500/20 transition-all hover:shadow-xl hover:shadow-teal-500/30"
-            >
-              Join Waitlist
+              {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
           </div>
 
@@ -459,16 +970,22 @@ export default function App() {
           <div className="border-t border-slate-100 bg-white px-4 py-6 shadow-lg lg:hidden">
             <div className="flex flex-col space-y-4">
               <button
-                onClick={() => navigateTo("home")}
-                className={`text-left font-medium ${currentPage === "home" ? "text-teal-600" : "text-slate-600"}`}
-              >
-                Home
-              </button>
-              <button
                 onClick={() => navigateTo("about")}
                 className={`text-left font-medium ${currentPage === "about" ? "text-teal-600" : "text-slate-600"}`}
               >
                 About us
+              </button>
+              <button
+                onClick={() => navigateTo("pulse")}
+                className={`text-left font-medium ${currentPage === "pulse" ? "text-teal-600" : "text-slate-600"}`}
+              >
+                pulseBhook
+              </button>
+              <button
+                onClick={() => navigateTo("seed")}
+                className={`text-left font-medium ${currentPage === "seed" ? "text-teal-600" : "text-slate-600"}`}
+              >
+                seedBhook
               </button>
               <button
                 onClick={() => navigateTo("home", "services")}
@@ -489,22 +1006,10 @@ export default function App() {
                 CEO's Office
               </button>
               <button
-                onClick={() => navigateTo("home", "contact")}
-                className="text-left font-medium text-slate-600"
-              >
-                Contact
-              </button>
-              <button
                 onClick={() => navigateTo("partner")}
                 className={`text-left font-medium ${currentPage === "partner" ? "text-teal-600" : "text-slate-600"}`}
               >
                 Partner
-              </button>
-              <button
-                onClick={() => navigateTo("home", "waitlist")}
-                className="rounded-full bg-gradient-to-r from-teal-600 to-teal-500 px-5 py-2 font-semibold text-white shadow-lg"
-              >
-                Join Waitlist
               </button>
             </div>
           </div>
@@ -517,20 +1022,20 @@ export default function App() {
           <div className="animate-in fade-in duration-500">
             {/* Hero Section */}
             <div className="mx-auto mb-12 max-w-7xl px-4 pt-4 md:mb-20 md:px-8 md:pt-6">
-              <div className="relative overflow-hidden rounded-3xl shadow-2xl md:h-[700px] md:rounded-[2.5rem]">
+              <div className="relative overflow-hidden rounded-3xl shadow-2xl md:min-h-[640px] md:rounded-[2.5rem]">
                 <img
                   src="https://images.unsplash.com/photo-1537996194471-e657df975ab4?q=80&w=2838&auto=format&fit=crop"
                   alt="Bali Temple"
                   className="absolute inset-0 h-full w-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/55 to-black/75 md:bg-gradient-to-r md:from-black/70 md:via-black/40 md:to-transparent"></div>
-                <div className="relative flex flex-col justify-center px-5 py-8 text-white sm:px-8 md:absolute md:inset-0 md:max-w-3xl md:px-16 md:py-0">
+                <div className="relative flex min-h-[520px] flex-col justify-center px-8 py-12 text-white sm:px-12 sm:py-16 md:min-h-[640px] md:max-w-3xl md:px-20 md:py-20">
                   <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider backdrop-blur-md">
                     <Sparkles className="h-3 w-3 text-teal-300" />{" "}
                     AI-Optimized Travel
                   </div>
-                  <h1 className="mb-4 text-3xl font-bold leading-tight sm:text-4xl md:mb-6 md:text-7xl">
-                    Tour Bhook: The Smart Way to{" "}
+                  <h1 className="mb-4 text-3xl font-bold leading-tight sm:text-4xl md:mb-6 md:text-6xl">
+                    TourBhook: The Smart Way to{" "}
                     <span className="bg-gradient-to-r from-teal-300 to-emerald-300 bg-clip-text text-transparent">
                       Explore the World
                     </span>
@@ -630,7 +1135,7 @@ export default function App() {
             {/* Stats */}
             <div className="mx-auto mb-24 max-w-4xl px-6 text-center">
               <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-teal-600">
-                The Tour Bhook Promise
+                The TourBhook Promise
               </div>
               <h2 className="mb-12 text-4xl font-bold text-slate-900 md:text-5xl">
                 Travel Smarter, Not Harder
@@ -670,7 +1175,7 @@ export default function App() {
                   Simple Process
                 </div>
                 <h2 className="text-4xl font-bold text-slate-900 md:text-5xl">
-                  How Tour Bhook Works
+                  How TourBhook Works
                 </h2>
                 <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-500">
                   From planning to exploring in just a few taps
@@ -971,7 +1476,7 @@ export default function App() {
                   Frequently Asked Questions
                 </h2>
                 <p className="text-lg text-slate-500">
-                  Everything you need to know about Tour Bhook
+                  Everything you need to know about TourBhook
                 </p>
                 <button
                   onClick={() => navigateTo("faqs")}
@@ -984,12 +1489,12 @@ export default function App() {
               <div className="space-y-4">
                 {[
                   {
-                    question: "Is Tour Bhook free to use?",
+                    question: "Is TourBhook free to use?",
                     answer:
-                      "Tour Bhook will offer both free and premium tiers. The free version includes basic route optimization and destination guides. Premium features include advanced AI planning and priority support. We'll announce pricing details closer to launch.",
+                      "TourBhook will offer both free and premium tiers. The free version includes basic route optimization and destination guides. Premium features include advanced AI planning and priority support. We'll announce pricing details closer to launch.",
                   },
                   {
-                    question: "When will Tour Bhook launch?",
+                    question: "When will TourBhook launch?",
                     answer:
                       "We're currently in closed beta and working hard to perfect the experience. Waitlist members will get early access starting Q3 2026. Join the waitlist to be first in line when we launch!",
                   },
@@ -1005,7 +1510,7 @@ export default function App() {
                       "Our AI analyzes millions of data points including travel times, opening hours, crowd patterns, and user preferences to create the most efficient route. We factor in real-time traffic, weather, and seasonal trends to save you hours of travel time.",
                   },
                   {
-                    question: "Can I use Tour Bhook offline?",
+                    question: "Can I use TourBhook offline?",
                     answer:
                       "TourBhook uses live spatial feeds and community data so routes stay current. Offline map downloads are not part of the product. The FAQ page explains what the routing engine does instead.",
                   },
@@ -1070,10 +1575,10 @@ export default function App() {
                   const testimonials = [
                     { quote: "I've been waiting for something like this. Planning Bali took me three weeks last time. I genuinely can't wait for this to launch.", name: "Ayesha R.", location: "Mumbai", avatar: "AR", color: "bg-teal-100 text-teal-700" },
                     { quote: "The idea of one app that actually works offline is what sold me. I've been burned too many times by no signal at the wrong moment.", name: "Karan M.", location: "Bangalore", avatar: "KM", color: "bg-violet-100 text-violet-700" },
-                    { quote: "Group travel is a nightmare to organise. If Tour Bhook can fix that, I'm signing up everyone I know.", name: "Priya S.", location: "Delhi", avatar: "PS", color: "bg-amber-100 text-amber-700" },
+                    { quote: "Group travel is a nightmare to organise. If TourBhook can fix that, I'm signing up everyone I know.", name: "Priya S.", location: "Delhi", avatar: "PS", color: "bg-amber-100 text-amber-700" },
                     { quote: "Every travel app I've used feels like it was built for someone else. This one actually gets how Indians travel.", name: "Rohan V.", location: "Pune", avatar: "RV", color: "bg-rose-100 text-rose-700" },
                     { quote: "The AI itinerary idea alone is worth it. I spend more time planning than actually travelling. Please launch fast.", name: "Sneha T.", location: "Chennai", avatar: "ST", color: "bg-teal-100 text-teal-700" },
-                    { quote: "Went to Vietnam last year and the chaos of figuring out buses and timings was exhausting. Tour Bhook sounds like the answer.", name: "Arjun N.", location: "Hyderabad", avatar: "AN", color: "bg-indigo-100 text-indigo-700" },
+                    { quote: "Went to Vietnam last year and the chaos of figuring out buses and timings was exhausting. TourBhook sounds like the answer.", name: "Arjun N.", location: "Hyderabad", avatar: "AN", color: "bg-indigo-100 text-indigo-700" },
                     { quote: "I travel solo and safety information is always hard to find. If the app covers that too, I'm a lifetime user.", name: "Meera K.", location: "Ahmedabad", avatar: "MK", color: "bg-emerald-100 text-emerald-700" },
                     { quote: "My friends and I can never agree on anything when planning. A voting feature for stops would literally save friendships.", name: "Dev P.", location: "Kolkata", avatar: "DP", color: "bg-orange-100 text-orange-700" },
                     { quote: "The local food discovery feature is what got me. Every travel app just recommends the same tourist traps.", name: "Nisha B.", location: "Jaipur", avatar: "NB", color: "bg-pink-100 text-pink-700" },
@@ -1122,22 +1627,37 @@ export default function App() {
                       <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-teal-50">
                         <CheckCircle className="h-8 w-8 text-teal-600" />
                       </div>
-                      <p className="mb-1 text-2xl font-bold text-slate-900">You're on the list!</p>
-                      <p className="mb-8 text-slate-500">We'll reach out as soon as we launch. Share with friends to move up the queue.</p>
+                      <p className="mb-1 text-2xl font-bold text-slate-900">
+                        {referralOffer?.alreadyJoined ? "You're already on the list" : "You're on the list!"}
+                      </p>
+                      <p className="mb-8 text-slate-500">
+                        {referralOffer?.alreadyJoined
+                          ? "This email already has a referral link. Here is the same one created the first time."
+                          : "We'll reach out as soon as we launch. Share with friends to move up the queue."}
+                      </p>
                       <div className="mx-auto max-w-md rounded-2xl border border-teal-100 bg-teal-50 p-6 text-left">
-                        <p className="mb-3 text-sm font-semibold text-teal-800">📣 Share with friends → move up the waitlist</p>
+                        <p className="mb-3 text-sm font-semibold text-teal-800">Your referral link</p>
                         <div className="mb-3 flex items-center gap-2 rounded-xl border border-teal-200 bg-white px-4 py-2.5 text-sm text-slate-600">
-                          <span className="flex-1 truncate">www.tourbhook.com/?ref=early</span>
+                          <span className="flex-1 truncate">{referralOffer?.url.replace("https://", "")}</span>
                           <button
-                            onClick={() => { navigator.clipboard.writeText("https://www.tourbhook.com/?ref=early"); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000); }}
+                            onClick={() => { navigator.clipboard.writeText(referralOffer?.url || ""); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000); }}
                             className="flex items-center gap-1.5 rounded-lg bg-teal-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-teal-700"
                           >
                             {referralCopied ? <><Check className="h-3 w-3" /> Copied!</> : <><Copy className="h-3 w-3" /> Copy</>}
                           </button>
                         </div>
+                        <p className="mb-3 text-sm text-slate-600">
+                          Code <span className="font-semibold text-slate-900">{referralOffer?.code}</span>
+                          {" · "}
+                          {referralOffer?.count === 1 ? "1 person has" : `${referralOffer?.count ?? 0} people have`} signed up with it.
+                          Each signup is stored for rewards in the TourBhook app.
+                        </p>
+                        {referralOffer?.referredByCode ? (
+                          <p className="mb-3 text-xs text-teal-800">You joined with code {referralOffer.referredByCode}.</p>
+                        ) : null}
                         <div className="flex gap-2">
-                          <a href={`https://wa.me/?text=${encodeURIComponent("I just joined the Tour Bhook waitlist — the AI travel planner that saves hours of planning. Join here: https://www.tourbhook.com/?ref=early")}`} target="_blank" rel="noopener noreferrer" className="flex-1 rounded-xl bg-green-500 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-green-600">WhatsApp</a>
-                          <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Just joined the @TourBhook waitlist — AI-powered travel planning that actually makes sense 🌍 Join here: https://www.tourbhook.com/?ref=early")}`} target="_blank" rel="noopener noreferrer" className="flex-1 rounded-xl bg-slate-900 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-slate-700">Twitter / X</a>
+                          <a href={`https://wa.me/?text=${encodeURIComponent(`I just joined the TourBhook waitlist. Join with my link: ${referralOffer?.url}`)}`} target="_blank" rel="noopener noreferrer" className="flex-1 rounded-xl bg-green-500 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-green-600">WhatsApp</a>
+                          <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Just joined the @TourBhook waitlist. Join with my link: ${referralOffer?.url}`)}`} target="_blank" rel="noopener noreferrer" className="flex-1 rounded-xl bg-slate-900 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-slate-700">Twitter / X</a>
                         </div>
                       </div>
                     </div>
@@ -1164,6 +1684,9 @@ export default function App() {
                       </div>
                       {waitlistError ? (
                         <p className="text-sm text-red-600">{waitlistError}</p>
+                      ) : null}
+                      {incomingReferral.current ? (
+                        <p className="text-sm text-teal-700">Joining with referral code {incomingReferral.current}.</p>
                       ) : null}
                     </form>
                   )}
@@ -1288,7 +1811,7 @@ export default function App() {
                   <Building2 className="h-3.5 w-3.5" /> Our Story
                 </div>
                 <h1 className="mb-6 text-5xl font-bold md:text-6xl">We got lost so you don't have to.</h1>
-                <p className="text-lg text-slate-300">Tour Bhook started from a personal frustration — too many tabs, too many apps, and a holiday that felt like a project plan.</p>
+                <p className="text-lg text-slate-300">TourBhook started from a personal frustration — too many tabs, too many apps, and a holiday that felt like a project plan.</p>
               </div>
             </div>
 
@@ -1299,7 +1822,7 @@ export default function App() {
                   <div className="mb-3 text-xs font-bold uppercase tracking-widest text-teal-600">The Problem We Lived</div>
                   <h2 className="mb-5 text-3xl font-bold text-slate-900">Planning a trip shouldn't be a full-time job.</h2>
                   <p className="mb-4 leading-relaxed text-slate-600">We were a group of engineers and product designers at Pramahar Technologies who loved to travel. Every trip meant the same routine — hours on Google, WhatsApp groups full of links no one could agree on, screenshots scattered across five different apps, and a 40-tab browser that would crash right before you needed it most.</p>
-                  <p className="leading-relaxed text-slate-600">We built Tour Bhook because we couldn't find the tool we wanted. One app. One itinerary. AI that actually understands how you travel.</p>
+                  <p className="leading-relaxed text-slate-600">We built TourBhook because we couldn't find the tool we wanted. One app. One itinerary. AI that actually understands how you travel.</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   {[
@@ -1321,7 +1844,7 @@ export default function App() {
               <div className="mb-20 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm md:p-12">
                 <div className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-400">The Company Behind It</div>
                 <h2 className="mb-4 text-2xl font-bold text-slate-900">Pramahar Technologies</h2>
-                <p className="mb-6 leading-relaxed text-slate-600">Pramahar Technologies is the product studio that builds Tour Bhook. We are a small, remote-first team distributed across India, united by a belief that technology should make lived experiences better — not replace them. Tour Bhook is our first consumer product, and we are building it in public with our community every step of the way.</p>
+                <p className="mb-6 leading-relaxed text-slate-600">Pramahar Technologies is the product studio that builds TourBhook. We are a small, remote-first team distributed across India, united by a belief that technology should make lived experiences better — not replace them. TourBhook is our first consumer product, and we are building it in public with our community every step of the way.</p>
                 <div className="flex flex-wrap gap-6 border-t border-slate-100 pt-6 text-sm text-slate-500">
                   <span><strong className="text-slate-900">Founded</strong> — 2026</span>
                   <span><strong className="text-slate-900">HQ</strong> — India</span>
@@ -1541,7 +2064,7 @@ export default function App() {
                     <p className="leading-relaxed text-slate-500">
                       Since we are fully remote and do not have
                       any meetings, we do a lot of offsites.
-                      Tour Bhook has an offsite every 4 months,
+                      TourBhook has an offsite every 4 months,
                       for 4–5 days. We travel to amazing places,
                       stay at fancy resorts, eat and drink
                       awesome, and have a lot of conversations.
@@ -1757,7 +2280,7 @@ export default function App() {
                     {
                       icon: "📊",
                       title: "Quarterly Bonus",
-                      body: "10% of Tour Bhook's profits every quarter form the bonus pool for the team, distributed based on quality and timeliness. Partners can opt into a performance bonus structure of their choice.",
+                      body: "10% of TourBhook's profits every quarter form the bonus pool for the team, distributed based on quality and timeliness. Partners can opt into a performance bonus structure of their choice.",
                     },
                     {
                       icon: "🔓",
@@ -2433,7 +2956,7 @@ export default function App() {
 
                         <div className="mb-8">
                           <label className="mb-2 block text-sm font-semibold text-slate-700">
-                            Why do you want to join Tour Bhook?
+                            Why do you want to join TourBhook?
                             *
                           </label>
                           <textarea
@@ -2834,29 +3357,45 @@ export default function App() {
                   <div className="space-y-4">
                     <div className="mb-8 flex items-center justify-between">
                       <h2 className="text-xl font-bold text-slate-900">Top requested features</h2>
-                      <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">{Object.keys(featureVotes).length} voted</span>
+                      <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+                        {Object.values(featureVotes).reduce((sum, count) => sum + count, 0).toLocaleString("en-IN")} votes
+                      </span>
                     </div>
                     {features.map((f) => {
-                      const voted = featureVotes[f.id];
-                      const displayVotes = voted ? f.votes + 1 : f.votes;
+                      const votes = featureVotes[f.id] ?? f.votes;
+                      const top = Math.max(...features.map((item) => featureVotes[item.id] ?? item.votes), 1);
                       return (
-                        <div key={f.id} className={`group flex items-center gap-4 rounded-2xl border p-5 transition-all hover:shadow-md ${voted ? "border-teal-200 bg-teal-50" : "border-slate-100 bg-white"}`}>
-                          <span className="text-3xl">{f.emoji}</span>
-                          <div className="flex-1">
-                            <div className="font-semibold text-slate-900">{f.title}</div>
-                            <p className="mt-0.5 text-sm text-slate-500">{f.desc}</p>
+                        <div key={f.id} className="rounded-2xl border border-slate-100 bg-white p-5">
+                          <div className="flex items-center gap-4">
+                            <span className="text-3xl">{f.emoji}</span>
+                            <div className="flex-1">
+                              <div className="font-semibold text-slate-900">{f.title}</div>
+                              <p className="mt-0.5 text-sm text-slate-500">{f.desc}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                fetch(`/api/feature-votes/${f.id}`, { method: "POST" })
+                                  .then((response) => response.json())
+                                  .then((data) => {
+                                    if (Number.isFinite(Number(data.votes))) {
+                                      setFeatureVotes((current) => ({ ...current, [f.id]: Number(data.votes) }));
+                                    }
+                                  })
+                                  .catch(() => {});
+                              }}
+                              className="flex flex-shrink-0 flex-col items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 transition-all hover:border-teal-300 hover:text-teal-600"
+                            >
+                              <span className="text-base">▲</span>
+                              <span>{votes.toLocaleString("en-IN")}</span>
+                            </button>
                           </div>
-                          <button
-                            onClick={() => setFeatureVotes(prev => {
-                              const next = { ...prev };
-                              if (next[f.id]) { delete next[f.id]; } else { next[f.id] = true; }
-                              return next;
-                            })}
-                            className={`flex flex-shrink-0 flex-col items-center rounded-xl border px-4 py-2 text-sm font-bold transition-all ${voted ? "border-teal-400 bg-teal-500 text-white" : "border-slate-200 bg-white text-slate-600 hover:border-teal-300 hover:text-teal-600"}`}
-                          >
-                            <span className="text-base">{voted ? "▲" : "△"}</span>
-                            <span>{displayVotes.toLocaleString()}</span>
-                          </button>
+                          <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
+                            <div
+                              className="h-full rounded-full bg-[#00d2eb] transition-all duration-500"
+                              style={{ width: `${Math.max(6, Math.round((votes / top) * 100))}%` }}
+                            />
+                          </div>
                         </div>
                       );
                     })}
@@ -2904,7 +3443,7 @@ export default function App() {
                   <Newspaper className="h-3.5 w-3.5" /> Press &amp; Media
                 </div>
                 <h1 className="mb-4 text-5xl font-bold text-slate-900 md:text-6xl">Media Kit</h1>
-                <p className="text-lg text-slate-500">Everything you need to cover Tour Bhook. For press enquiries, email us directly.</p>
+                <p className="text-lg text-slate-500">Everything you need to cover TourBhook. For press enquiries, email us directly.</p>
                 <EmailOfficeButton
                   label="Email us"
                   className="mt-6 inline-flex items-center gap-2 rounded-full border border-slate-200 px-5 py-2 text-sm font-medium text-slate-700 transition hover:border-teal-300 hover:text-teal-600"
@@ -2917,10 +3456,10 @@ export default function App() {
               <div className="mb-16 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm md:p-10">
                 <h2 className="mb-4 text-2xl font-bold text-slate-900">Company Boilerplate</h2>
                 <p className="mb-4 leading-relaxed text-slate-600">
-                  Tour Bhook is an AI-powered travel planning app developed by Pramahar Technologies. The app uses intelligent route optimisation and community-verified recommendations to help travellers spend less time planning and more time exploring. Tour Bhook is currently in pre-launch with over 8,200 early adopters on its waitlist, and is set to launch in Southeast Asia with full coverage of Bali, Thailand, Vietnam, and Singapore.
+                  TourBhook is an AI-powered travel planning app developed by Pramahar Technologies. The app uses intelligent route optimisation and community-verified recommendations to help travellers spend less time planning and more time exploring. TourBhook is currently in pre-launch with over 8,200 early adopters on its waitlist, and is set to launch in Southeast Asia with full coverage of Bali, Thailand, Vietnam, and Singapore.
                 </p>
                 <button
-                  onClick={() => { navigator.clipboard.writeText("Tour Bhook is an AI-powered travel planning app developed by Pramahar Technologies. The app uses intelligent route optimisation and community-verified recommendations to help travellers spend less time planning and more time exploring. Tour Bhook is currently in pre-launch with over 8,200 early adopters on its waitlist, and is set to launch in Southeast Asia with full coverage of Bali, Thailand, Vietnam, and Singapore."); }}
+                  onClick={() => { navigator.clipboard.writeText("TourBhook is an AI-powered travel planning app developed by Pramahar Technologies. The app uses intelligent route optimisation and community-verified recommendations to help travellers spend less time planning and more time exploring. TourBhook is currently in pre-launch with over 8,200 early adopters on its waitlist, and is set to launch in Southeast Asia with full coverage of Bali, Thailand, Vietnam, and Singapore."); }}
                   className="flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-teal-300 hover:text-teal-600"
                 >
                   <Copy className="h-4 w-4" /> Copy boilerplate
@@ -2953,7 +3492,7 @@ export default function App() {
                 <div className="space-y-4">
                   {[
                     { title: "Verify before you publish", body: "Please reach out to us before going to print. We're happy to confirm facts, provide quotes, or clarify anything that seems ambiguous. This keeps coverage accurate for your readers." },
-                    { title: "Keep the brands separate", body: "Tour Bhook and Pramahar Technologies are distinct brands. Tour Bhook is the consumer product; Pramahar Technologies is the parent company. Please do not conflate the two in headlines or body copy." },
+                    { title: "Keep the brands separate", body: "TourBhook and Pramahar Technologies are distinct brands. TourBhook is the consumer product; Pramahar Technologies is the parent company. Please do not conflate the two in headlines or body copy." },
                     { title: "No unreleased feature screenshots", body: "We share early builds with media under embargo from time to time. Please do not publish screenshots of unreleased features or flows without prior written approval from our team." },
                   ].map((g, i) => (
                     <div key={i} className="rounded-2xl border border-slate-100 bg-slate-50 p-6">
@@ -3164,7 +3703,257 @@ export default function App() {
         )}
 
         {/* 404 Fallback */}
-        {!["home","about","crewbhook","careers","partner","job-detail","roadmap","press","ceo","faqs"].includes(currentPage) && (
+        {currentPage === "pulse" && (
+          <div className="animate-in fade-in duration-500">
+            {(() => {
+              const article = PULSE_ARTICLES.find((item) => item.slug === pulseSlug);
+              if (!pulseSlug) {
+                return (
+                  <div className="bg-white">
+                    <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900 px-6 py-20 text-white">
+                      <div className="mx-auto max-w-5xl md:px-2">
+                        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-teal-300">
+                          <Newspaper className="h-3.5 w-3.5" /> pulseBhook
+                        </div>
+                        <h1 className="text-4xl font-bold md:text-5xl">News, launches, and stories</h1>
+                        <p className="mt-4 text-lg text-slate-300">Official notes from TourBhook.</p>
+                      </div>
+                    </div>
+                    <div className="mx-auto max-w-5xl px-6 pb-24 md:px-8">
+                      <div className="border-t border-slate-200">
+                        {PULSE_ARTICLES.map((item) => (
+                          <button
+                            key={item.slug}
+                            type="button"
+                            onClick={() => openPulse(item.slug)}
+                            className={`grid w-full gap-8 border-b border-slate-200 py-12 text-left md:items-center ${item.image ? "md:grid-cols-[minmax(0,1fr)_18rem]" : ""}`}
+                          >
+                            <div>
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold uppercase tracking-[0.18em] text-teal-600">
+                                <span>{item.date}</span>
+                                {pulseReads[item.slug] != null ? (
+                                  <span>{pulseReads[item.slug].toLocaleString("en-IN")} reads</span>
+                                ) : null}
+                              </div>
+                              <h2 className="mt-3 text-2xl font-bold tracking-tight text-slate-900 md:text-4xl">
+                                {item.title}
+                              </h2>
+                              <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 md:text-lg">
+                                {item.dek ?? item.sections[0]?.paragraphs[0]}
+                              </p>
+                              <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-900">
+                                Read story
+                                <ArrowRight className="h-4 w-4" />
+                              </span>
+                            </div>
+                            {item.image ? (
+                              <img
+                                src={item.image}
+                                alt={item.imageAlt}
+                                className="aspect-[4/3] w-full rounded-2xl object-cover"
+                              />
+                            ) : null}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+              if (!article) {
+                return (
+                  <div className="mx-auto max-w-3xl px-6 py-20">
+                    <h1 className="mb-4 text-3xl font-bold text-slate-900">Story not found</h1>
+                    <button type="button" onClick={() => openPulse()} className="font-semibold text-teal-700">
+                      Back to pulseBhook
+                    </button>
+                  </div>
+                );
+              }
+              return (
+                <article>
+                  <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900 px-6 py-20 text-white">
+                    <div className="mx-auto max-w-3xl">
+                      <button
+                        type="button"
+                        onClick={() => openPulse()}
+                        className="mb-6 block text-left text-sm font-semibold text-teal-300"
+                      >
+                        pulseBhook
+                      </button>
+                      <div className="mb-4 flex flex-wrap items-center gap-3">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-teal-300">
+                          <Newspaper className="h-3.5 w-3.5" /> {article.date}
+                        </div>
+                        {pulseReads[article.slug] != null ? (
+                          <span className="text-sm text-slate-300">
+                            {pulseReads[article.slug].toLocaleString("en-IN")} reads
+                          </span>
+                        ) : null}
+                      </div>
+                      <h1 className="text-4xl font-bold md:text-5xl">{article.title}</h1>
+                      {article.dek ? <p className="mt-6 text-lg text-slate-300">{article.dek}</p> : null}
+                    </div>
+                  </div>
+                  <div className="mx-auto max-w-3xl px-6 py-12">
+                    {article.image ? (
+                      <img
+                        src={article.image}
+                        alt={article.imageAlt}
+                        className="mb-10 w-full rounded-3xl object-cover"
+                      />
+                    ) : null}
+                    {article.sections.map((section) => (
+                      <section key={section.heading || "lede"} className="mb-10">
+                        {section.heading ? (
+                          <h2 className="mb-4 text-2xl font-bold text-slate-900">{section.heading}</h2>
+                        ) : null}
+                        {section.paragraphs.map((paragraph) => (
+                          <p key={paragraph} className="mb-4 text-lg leading-relaxed text-slate-600">{paragraph}</p>
+                        ))}
+                        {section.website ? (
+                          <p className="text-lg text-slate-600">
+                            Website:{" "}
+                            <a href={section.website.href} className="font-semibold text-teal-700">
+                              {section.website.label}
+                            </a>
+                          </p>
+                        ) : null}
+                      </section>
+                    ))}
+                  </div>
+                </article>
+              );
+            })()}
+          </div>
+        )}
+
+        {currentPage === "seed" && (
+          <div className="animate-in fade-in duration-500">
+            <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900 px-6 py-20 text-white">
+              <div className="mx-auto max-w-3xl text-center">
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-teal-300">
+                  <Gift className="h-3.5 w-3.5" /> seedBhook
+                </div>
+                <h1 className="mb-4 text-4xl font-bold md:text-6xl">Help us raise ₹1 crore.</h1>
+                <p className="text-lg text-slate-300">
+                  Fund TourBhook in the portion you choose, from {formatInr(SEED_MIN)} to {formatInr(SEED_MAX)}. Every contribution is non-refundable.
+                </p>
+                <SeedGrowth raised={seedRaised} goal={SEED_GOAL} light />
+                <div className="mx-auto mt-8 max-w-xl text-left">
+                  <div className="mb-2 flex justify-between text-sm text-slate-300">
+                    <span>{formatInr(seedRaised)} raised</span>
+                    <span>Goal {formatInr(SEED_GOAL)}</span>
+                  </div>
+                  <div className="h-3 overflow-hidden rounded-full bg-white/15">
+                    <div
+                      className="h-full rounded-full bg-[#00d2eb]"
+                      style={{ width: `${Math.min(100, (seedRaised / SEED_GOAL) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="mx-auto grid max-w-6xl gap-8 px-6 py-16 lg:grid-cols-[1.1fr_0.9fr]">
+              <div>
+                <div className="mb-8 grid gap-4 sm:grid-cols-3">
+                  {[
+                    ["1", "Choose your portion", "From ₹100 up to ₹10,00,000."],
+                    ["2", "Pay with Razorpay", "Payments are non-refundable."],
+                    ["3", "Watch it grow", "It grows with the total received, until ₹1 crore."],
+                  ].map(([step, title, body]) => (
+                    <div key={step} className="rounded-2xl border border-slate-200 bg-white p-5">
+                      <div className="mb-2 text-xs font-bold uppercase tracking-widest text-teal-600">Step {step}</div>
+                      <h2 className="mb-2 font-bold text-slate-900">{title}</h2>
+                      <p className="text-sm text-slate-500">{body}</p>
+                    </div>
+                  ))}
+                </div>
+                <h2 className="mb-4 text-2xl font-bold text-slate-900">Or pick an amount</h2>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {SEED_EXAMPLES.map((amount) => (
+                      <button
+                        key={amount}
+                        type="button"
+                        onClick={() => applySeedAmount(amount)}
+                        className={`rounded-2xl border p-4 text-left transition ${seedAmount === amount ? "border-teal-500 bg-teal-50" : "border-slate-200 bg-white hover:border-teal-200"}`}
+                      >
+                        <div className="text-lg font-bold text-slate-900">{formatInr(amount)}</div>
+                      </button>
+                  ))}
+                </div>
+              </div>
+              <div className="h-fit rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-24">
+                {seedSubmitted ? (
+                  <div className="py-8 text-center">
+                    <CheckCircle className="mx-auto mb-4 h-12 w-12 text-teal-500" />
+                    <h2 className="mb-2 text-2xl font-bold text-slate-900">Payment received</h2>
+                    <p className="text-slate-500">
+                      {formatInr(seedAmount)} is recorded. This contribution is non-refundable.
+                    </p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSeedSubmit} className="space-y-5">
+                    <div>
+                      <div className="mb-1 text-sm font-semibold text-slate-500">Your pledge</div>
+                      <div className="text-4xl font-bold text-slate-900">{formatInr(seedAmount)}</div>
+                    </div>
+                    <label className="block text-sm font-semibold text-slate-700">
+                      Amount
+                      <input
+                        type="range"
+                        min={0}
+                        max={1000}
+                        step={1}
+                        value={sliderFromAmount(seedAmount)}
+                        onChange={(e) => applySeedAmount(amountFromSlider(Number(e.target.value)))}
+                        className="mt-3 w-full accent-teal-600"
+                      />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={seedAmountInput}
+                        onChange={(e) => setSeedAmountInput(e.target.value.replace(/[^\d]/g, ""))}
+                        onBlur={() => applySeedAmount(Number(seedAmountInput))}
+                        className="mt-3 w-full rounded-xl border border-slate-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </label>
+                    <label className="block text-sm font-semibold text-slate-700">
+                      Name
+                      <input name="name" required maxLength={200} placeholder="Your name" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-normal focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                    </label>
+                    <label className="block text-sm font-semibold text-slate-700">
+                      Email
+                      <input name="email" type="email" required maxLength={320} placeholder="you@email.com" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-normal focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                    </label>
+                    <label className="block text-sm font-semibold text-slate-700">
+                      Note <span className="font-normal text-slate-400">(optional)</span>
+                      <textarea name="note" rows={3} maxLength={500} placeholder="Anything you want us to know" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-normal focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                    </label>
+                    <label className="flex items-start gap-3 text-sm text-slate-600">
+                      <input
+                        type="checkbox"
+                        checked={seedAccepted}
+                        onChange={(e) => setSeedAccepted(e.target.checked)}
+                        className="mt-1 h-4 w-4 accent-[#00d2eb]"
+                      />
+                      <span>I understand this contribution is non-refundable.</span>
+                    </label>
+                    {seedError ? <p className="text-sm text-red-600">{seedError}</p> : null}
+                    <button type="submit" disabled={seedPending || !seedAccepted} className="w-full rounded-xl bg-slate-900 py-3 font-bold text-white transition hover:bg-slate-800 disabled:opacity-50">
+                      {seedPending ? "Opening payment..." : `Pay ${formatInr(seedAmount)}`}
+                    </button>
+                    <p className="text-xs leading-relaxed text-slate-500">
+                      seedBhook does not sell shares. Portions add up to a ₹1 crore goal, and they are not returned.
+                    </p>
+                  </form>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!["home","about","crewbhook","careers","partner","job-detail","roadmap","press","ceo","faqs","pulse","seed"].includes(currentPage) && (
           <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center animate-in fade-in duration-500">
             <div className="mb-6 text-7xl">🗺️</div>
             <h1 className="mb-3 text-4xl font-bold text-slate-900">Page not found</h1>
@@ -3186,34 +3975,66 @@ export default function App() {
                 onClick={() => navigateTo("home")}
                 className="group mb-4 flex items-center gap-2 transition-opacity hover:opacity-90"
               >
-                <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-xl bg-slate-900 p-2 shadow-sm">
-                  <img
-                    src={logoImg}
-                    alt="Tour Bhook"
-                    className="h-full w-full object-contain"
-                  />
-                </div>
+                <img
+                  src={dark ? logoDark : logoLight}
+                  alt="TourBhook"
+                  className="h-10 w-auto"
+                />
                 <span className="text-xl font-bold tracking-tight text-slate-900">
-                  Tour{" "}
-                  <span className="text-teal-600">Bhook</span>
+                  Tour<span className="text-teal-600">Bhook</span>
                 </span>
               </button>
               <p className="text-sm text-slate-500">
                 Revolutionizing travel with AI-driven
                 efficiency.
               </p>
+              <p className="mt-6 text-sm font-semibold tracking-wide text-slate-900">
+                PRAMAHAR TECHNOLOGIES PRIVATE LIMITED
+              </p>
+              <p className="mt-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Registered office
+              </p>
+              <address className="mt-2 text-sm not-italic leading-relaxed text-slate-500">
+                No. 13-14, 1st Floor,
+                <br />
+                SV Complex, Navodaya Nagar,
+                <br />
+                Kothanur Main Road,
+                <br />
+                J.P. Nagar 7th Phase,
+                <br />
+                Bangalore - 560078
+              </address>
+              <p className="mt-3 text-sm text-slate-500">CIN Number: U52291KA2026PTC226806</p>
+              <p className="text-sm text-slate-500">GST Number: 29AARCP4534A1ZB</p>
             </div>
             <div>
               <h4 className="mb-4 font-bold text-slate-900">
                 Company
               </h4>
-              <ul className="space-y-2 text-sm text-slate-500">
+              <ul className="grid grid-flow-col grid-rows-4 gap-x-8 gap-y-2 text-left text-sm text-slate-500">
                 <li>
                   <button
                     onClick={() => navigateTo("about")}
                     className="hover:text-teal-600"
                   >
                     About Us
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigateTo("pulse")}
+                    className="hover:text-teal-600"
+                  >
+                    pulseBhook
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigateTo("seed")}
+                    className="hover:text-teal-600"
+                  >
+                    seedBhook
                   </button>
                 </li>
                 <li>
@@ -3272,16 +4093,28 @@ export default function App() {
                   <Instagram className="h-4 w-4" />
                 </a>
                 <a
-                  href="#"
+                  href="https://www.youtube.com/channel/UCBzIPyW9ZMjDisnH4DmcaCA"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="TourBhook on YouTube"
                   className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 transition-colors hover:bg-teal-600 hover:text-white"
                 >
-                  <Twitter className="h-4 w-4" />
+                  <Youtube className="h-4 w-4" />
+                </a>
+                <a
+                  href="https://www.linkedin.com/company/pramahar/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Pramahar on LinkedIn"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 transition-colors hover:bg-teal-600 hover:text-white"
+                >
+                  <Linkedin className="h-4 w-4" />
                 </a>
               </div>
             </div>
           </div>
           <div className="flex flex-col items-center justify-between gap-4 border-t border-slate-200 pt-8 text-sm font-normal leading-none text-slate-500 md:flex-row">
-            <p className="m-0">© 2026 Tour Bhook Inc.</p>
+            <p className="m-0">© 2026 TourBhook Inc.</p>
             <div className="flex items-center gap-6">
               <button
                 type="button"
@@ -3301,9 +4134,67 @@ export default function App() {
         </div>
       </footer>
 
+      {/* Referral gate */}
+      {referralGateOpen && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+          <form
+            onSubmit={submitReferralGate}
+            className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl"
+            aria-modal="true"
+            role="dialog"
+            aria-labelledby="referral-gate-title"
+          >
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-teal-600">
+              Invited with {incomingReferral.current}
+            </p>
+            <h2 id="referral-gate-title" className="mb-2 text-2xl font-bold text-slate-900">
+              Enter your email to view TourBhook
+            </h2>
+            <p className="mb-6 text-sm text-slate-500">
+              This link was shared with you. Allow location, add your email, then the site opens.
+            </p>
+            <p className={`mb-4 text-sm ${gateLocation ? "text-teal-700" : "text-slate-600"}`}>
+              {gateLocation
+                ? "Location received."
+                : "Location access is required before you can continue."}
+            </p>
+            {!gateLocation ? (
+              <button
+                type="button"
+                onClick={requestGateLocation}
+                className="mb-4 w-full rounded-xl border border-slate-300 py-3 font-semibold text-slate-800"
+              >
+                Allow location
+              </button>
+            ) : null}
+            <label className="mb-2 block text-sm font-semibold text-slate-700" htmlFor="referral-gate-email">
+              Email
+            </label>
+            <input
+              id="referral-gate-email"
+              type="email"
+              required
+              autoFocus
+              value={gateEmail}
+              onChange={(e) => setGateEmail(e.target.value)}
+              placeholder="you@email.com"
+              className="mb-4 w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 outline-none focus:border-teal-500"
+            />
+            {gateError ? <p className="mb-4 text-sm text-red-600">{gateError}</p> : null}
+            <button
+              type="submit"
+              disabled={gatePending || !gateLocation}
+              className="w-full rounded-xl bg-slate-900 py-3 font-bold text-white transition hover:bg-slate-800 disabled:opacity-50"
+            >
+              {gatePending ? "Saving..." : "Submit"}
+            </button>
+          </form>
+        </div>
+      )}
+
       {/* Terms Modal */}
       {/* Cookie Consent Banner */}
-      {!cookieDismissed && (
+      {!cookieDismissed && !referralGateOpen && (
         <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white px-6 py-4 shadow-lg md:bottom-6 md:left-6 md:right-auto md:max-w-md md:rounded-2xl md:border md:shadow-xl">
           <p className="mb-3 text-sm text-slate-600">We use minimal cookies to keep the site working and understand how visitors interact with it. No ad tracking, ever.</p>
           <div className="flex items-center gap-3">
@@ -3335,12 +4226,12 @@ export default function App() {
               <div className="space-y-5 text-sm text-slate-600 leading-relaxed">
                 <p className="text-slate-400 text-xs">Last updated: September 2026</p>
                 {[
-                  { title: "1. Acceptance of Terms", body: "By accessing or using Tour Bhook (\"the App\"), operated by Pramahar Technologies, you agree to be bound by these Terms and Conditions. If you do not agree, please do not use the App." },
-                  { title: "2. Use of the Service", body: "Tour Bhook provides AI-assisted travel planning and itinerary management. The App is currently in pre-launch phase. Features displayed may change before the official release. You may not use the service for any unlawful purpose or in a way that could damage, disable, or impair the service." },
-                  { title: "3. Waitlist & Early Access", body: "By joining the waitlist, you agree to receive email communications from Tour Bhook regarding product updates and launch announcements. You may unsubscribe at any time. Waitlist position is not guaranteed and may change." },
-                  { title: "4. Intellectual Property", body: "All content, branding, and technology within Tour Bhook — including the TB logo, product name, and AI systems — are the intellectual property of Pramahar Technologies. You may not reproduce, distribute, or create derivative works without prior written permission." },
+                  { title: "1. Acceptance of Terms", body: "By accessing or using TourBhook (\"the App\"), operated by Pramahar Technologies, you agree to be bound by these Terms and Conditions. If you do not agree, please do not use the App." },
+                  { title: "2. Use of the Service", body: "TourBhook provides AI-assisted travel planning and itinerary management. The App is currently in pre-launch phase. Features displayed may change before the official release. You may not use the service for any unlawful purpose or in a way that could damage, disable, or impair the service." },
+                  { title: "3. Waitlist & Early Access", body: "By joining the waitlist, you agree to receive email communications from TourBhook regarding product updates and launch announcements. You may unsubscribe at any time. Waitlist position is not guaranteed and may change." },
+                  { title: "4. Intellectual Property", body: "All content, branding, and technology within TourBhook — including the TB logo, product name, and AI systems — are the intellectual property of Pramahar Technologies. You may not reproduce, distribute, or create derivative works without prior written permission." },
                   { title: "5. Third-Party Services", body: "The App may integrate with third-party services including mapping providers, booking platforms, and AI APIs. We are not responsible for the availability, accuracy, or content of third-party services." },
-                  { title: "6. Limitation of Liability", body: "Tour Bhook and Pramahar Technologies shall not be liable for any indirect, incidental, or consequential damages arising from your use of the App, including travel disruptions, booking errors, or reliance on AI-generated itineraries." },
+                  { title: "6. Limitation of Liability", body: "TourBhook and Pramahar Technologies shall not be liable for any indirect, incidental, or consequential damages arising from your use of the App, including travel disruptions, booking errors, or reliance on AI-generated itineraries." },
                   { title: "7. Changes to Terms", body: "We reserve the right to modify these Terms at any time. Continued use of the App after changes are posted constitutes your acceptance of the revised Terms." },
                   { title: "8. Contact", body: "For any questions about these Terms, use the button below. It opens the mail app on this device." },
                 ].map((section, i) => (

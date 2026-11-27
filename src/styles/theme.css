@@ -135,6 +135,11 @@
 
   html {
     font-size: var(--font-size);
+    font-family: Montserrat, sans-serif;
+  }
+
+  body, button, input, textarea, select {
+    font-family: Montserrat, sans-serif;
   }
 
   h1 {

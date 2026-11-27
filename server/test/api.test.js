@@ -1,8 +1,10 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import crypto from "node:crypto";
 import test from "node:test";
 import assert from "node:assert/strict";
+import { verifyPaymentSignature } from "../src/razorpay.js";
 
 process.env.DATABASE_HOST = process.env.DATABASE_HOST || "127.0.0.1";
 process.env.DATABASE_PORT = process.env.DATABASE_PORT || "3306";
@@ -35,7 +37,9 @@ async function login() {
 
 async function clearLeads() {
   for (const table of [
+    "waitlist_referrals",
     "waitlist_signups",
+    "seed_pledges",
     "contact_messages",
     "job_applications",
     "partner_applications",
@@ -56,6 +60,23 @@ test.after(async () => {
   started.server.close();
 });
 
+test("razorpay signature matches the order and payment", () => {
+  const previousId = process.env.RAZORPAY_KEY_ID;
+  const previousSecret = process.env.RAZORPAY_KEY_SECRET;
+  process.env.RAZORPAY_KEY_ID = "rzp_test_key";
+  process.env.RAZORPAY_KEY_SECRET = "test-secret";
+  const signature = crypto
+    .createHmac("sha256", "test-secret")
+    .update("order_123|pay_456")
+    .digest("hex");
+  assert.equal(verifyPaymentSignature("order_123", "pay_456", signature), true);
+  assert.equal(verifyPaymentSignature("order_123", "pay_456", "deadbeef"), false);
+  if (previousId === undefined) delete process.env.RAZORPAY_KEY_ID;
+  else process.env.RAZORPAY_KEY_ID = previousId;
+  if (previousSecret === undefined) delete process.env.RAZORPAY_KEY_SECRET;
+  else process.env.RAZORPAY_KEY_SECRET = previousSecret;
+});
+
 test("health check reaches MySQL", async () => {
   const response = await fetch(`${base}/api/health`);
   assert.equal(response.status, 200);
@@ -66,10 +87,15 @@ test("waitlist signup is stored and hidden without a JWT", async () => {
   const created = await fetch(`${base}/api/waitlist`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: "Early-Access@Example.com" }),
+    body: JSON.stringify({ email: "Early-Access@Example.com", latitude: 12.97, longitude: 77.59 }),
   });
   assert.equal(created.status, 201);
-  assert.deepEqual(await created.json(), { ok: true, alreadyJoined: false });
+  const createdBody = await created.json();
+  assert.equal(createdBody.ok, true);
+  assert.equal(createdBody.alreadyJoined, false);
+  assert.match(createdBody.referralCode, /^[a-z]{3}\d{3}$/);
+  assert.equal(createdBody.referralUrl, `https://www.tourbhook.com/?ref=${createdBody.referralCode}`);
+  assert.equal(createdBody.referralCount, 0);
 
   const again = await fetch(`${base}/api/waitlist`, {
     method: "POST",
@@ -77,7 +103,9 @@ test("waitlist signup is stored and hidden without a JWT", async () => {
     body: JSON.stringify({ email: "early-access@example.com" }),
   });
   assert.equal(again.status, 201);
-  assert.equal((await again.json()).alreadyJoined, true);
+  const againBody = await again.json();
+  assert.equal(againBody.alreadyJoined, true);
+  assert.equal(againBody.referralCode, createdBody.referralCode);
 
   const locked = await fetch(`${base}/api/admin/waitlist`);
   assert.equal(locked.status, 401);
@@ -90,6 +118,109 @@ test("waitlist signup is stored and hidden without a JWT", async () => {
   const body = await opened.json();
   assert.equal(body.items.length, 1);
   assert.equal(body.items[0].email, "early-access@example.com");
+  assert.equal(body.items[0].referral_code, createdBody.referralCode);
+  assert.equal(Number(body.items[0].referral_count), 0);
+});
+
+test("referral codes are unique and counted for the referrer", async () => {
+  const referrer = await fetch(`${base}/api/waitlist`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "maverick.tourbhook@gmail.com", latitude: 12.97, longitude: 77.59 }),
+  });
+  const referrerBody = await referrer.json();
+  assert.match(referrerBody.referralCode, /^[a-z]{3}\d{3}$/);
+
+  const missingLocation = await fetch(`${base}/api/waitlist`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: "nolocation@example.com",
+      referralCode: referrerBody.referralCode,
+    }),
+  });
+  assert.equal(missingLocation.status, 400);
+
+  const friend = await fetch(`${base}/api/waitlist`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: "friend@example.com",
+      referralCode: referrerBody.referralCode,
+      latitude: 12.9012,
+      longitude: 77.5854,
+    }),
+  });
+  const friendBody = await friend.json();
+  assert.equal(friend.status, 201);
+  assert.equal(friendBody.referredByCode, referrerBody.referralCode);
+  assert.notEqual(friendBody.referralCode, referrerBody.referralCode);
+
+  const repeat = await fetch(`${base}/api/waitlist`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: "friend@example.com",
+      referralCode: referrerBody.referralCode,
+    }),
+  });
+  const repeatBody = await repeat.json();
+  assert.equal(repeatBody.alreadyJoined, true);
+  assert.equal(repeatBody.referralCode, friendBody.referralCode);
+
+  const token = await login();
+  const opened = await fetch(`${base}/api/admin/waitlist`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const items = (await opened.json()).items;
+  const row = items.find((item) => item.email === "maverick.tourbhook@gmail.com");
+  assert.equal(Number(row.referral_count), 1);
+  assert.equal(Number(row.reward_credits), 1);
+});
+
+test("seed payments reject amounts outside the range and a bad signature", async () => {
+  const low = await fetch(`${base}/api/seed-orders`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: "Ada", email: "ada@example.com", amount: 50 }),
+  });
+  assert.equal(low.status, 400);
+
+  const high = await fetch(`${base}/api/seed-orders`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: "Ada", email: "ada@example.com", amount: 1000001 }),
+  });
+  assert.equal(high.status, 400);
+
+  const created = await fetch(`${base}/api/seed-orders`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: "Ada Lovelace", email: "ada@example.com", amount: 1200, nonRefundable: true, latitude: 12.97, longitude: 77.59 }),
+  });
+  assert.equal(created.status, 503);
+
+  const progress = await fetch(`${base}/api/seed-progress`);
+  const progressBody = await progress.json();
+  assert.equal(progress.status, 200);
+  assert.equal(progressBody.goal, 10000000);
+  assert.equal(typeof progressBody.raised, "number");
+  assert.equal(progressBody.email, undefined);
+
+  const verify = await fetch(`${base}/api/seed-payments/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      pledgeId: "11111111-1111-1111-1111-111111111111",
+      razorpayOrderId: "order_test",
+      razorpayPaymentId: "pay_test",
+      razorpaySignature: "not-a-real-signature",
+    }),
+  });
+  assert.equal(verify.status, 400);
+
+  const locked = await fetch(`${base}/api/admin/seed-pledges`);
+  assert.equal(locked.status, 401);
 });
 
 test("contact, partner, and idea posts are readable by an admin", async () => {
@@ -100,6 +231,8 @@ test("contact, partner, and idea posts are readable by an admin", async () => {
       name: "Avery Chen",
       email: "avery@example.com",
       message: "When does the Bali guide open?",
+      latitude: 12.97,
+      longitude: 77.59,
     }),
   });
   assert.equal(contact.status, 201);
@@ -112,6 +245,8 @@ test("contact, partner, and idea posts are readable by an admin", async () => {
       phone: "+91 98765 43210",
       experience: "5+ Years",
       location: "Kochi, Kerala",
+      latitude: 12.97,
+      longitude: 77.59,
     }),
   });
   assert.equal(partner.status, 201);
@@ -143,9 +278,11 @@ test("job application stores the resume for an admin download", async () => {
   form.set("email", "avery@example.com");
   form.set("phone", "+91 90000 00000");
   form.set("experience", "5+ years");
-  form.set("whyJoin", "I would like to help build Tour Bhook.");
+  form.set("whyJoin", "I would like to help build TourBhook.");
   form.set("linkedinUrl", "https://linkedin.com/in/avery");
   form.set("githubUrl", "https://github.com/avery");
+  form.set("latitude", "12.97");
+  form.set("longitude", "77.59");
   form.set(
     "resume",
     new File(["%PDF-1.1 resume"], "avery-chen-resume.pdf", {
@@ -175,6 +312,58 @@ test("job application stores the resume for an admin download", async () => {
 
   const missing = await fetch(`${base}/api/admin/applications/${id}/resume`);
   assert.equal(missing.status, 401);
+});
+
+test("admin login stops password guessing", async () => {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const response = await fetch(`${base}/api/admin/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: process.env.ADMIN_EMAIL,
+        password: `wrong-${attempt}`,
+      }),
+    });
+    assert.equal(response.status, 401);
+  }
+  const blocked = await fetch(`${base}/api/admin/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: process.env.ADMIN_EMAIL,
+      password: "still-wrong",
+    }),
+  });
+  assert.equal(blocked.status, 429);
+});
+
+test("opening a pulse story adds one read", async () => {
+  const listedResponse = await fetch(`${base}/api/pulse-reads`);
+  assert.equal(listedResponse.status, 200);
+  const listed = await listedResponse.json();
+  assert.ok(listed.reads["beyond-bookings"] >= 400);
+  assert.ok(listed.reads["jaipur-vision"] >= 400);
+  const opened = await fetch(`${base}/api/pulse-reads/beyond-bookings`, { method: "POST" });
+  assert.equal(opened.status, 200);
+  const body = await opened.json();
+  assert.equal(body.reads, listed.reads["beyond-bookings"] + 1);
+  const missing = await fetch(`${base}/api/pulse-reads/not-a-story`, { method: "POST" });
+  assert.equal(missing.status, 404);
+});
+
+test("feature wishlist votes only increase", async () => {
+  const listed = await fetch(`${base}/api/feature-votes`);
+  assert.equal(listed.status, 200);
+  const before = (await listed.json()).votes.f5;
+  assert.ok(before >= 445);
+  const voted = await fetch(`${base}/api/feature-votes/f5`, { method: "POST" });
+  assert.equal(voted.status, 200);
+  const body = await voted.json();
+  assert.equal(body.votes, before + 1);
+  const again = await fetch(`${base}/api/feature-votes/f5`, { method: "POST" });
+  assert.equal((await again.json()).votes, before + 2);
+  const missing = await fetch(`${base}/api/feature-votes/nope`, { method: "POST" });
+  assert.equal(missing.status, 404);
 });
 
 test("invalid public payloads are rejected", async () => {

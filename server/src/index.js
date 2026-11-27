@@ -8,9 +8,15 @@ import dotenv from "dotenv";
 import express from "express";
 import multer from "multer";
 import { ensureAdmin, loginAdmin, requireAdmin } from "./auth.js";
-import { createPool, migrate, query } from "./db.js";
+import { createPool, featureVoteIds, migrate, pulseReadSlugs, query } from "./db.js";
 import { sendCeoOfficeNote } from "./ceoMail.js";
 import { deleteResume, isCloudResume, openResume, saveResume } from "./resumes.js";
+import { joinWaitlist, readLocation } from "./waitlist.js";
+import { scheduleSheetSync } from "./sheetSync.js";
+import {
+  createRazorpayOrder,
+  verifyPaymentSignature,
+} from "./razorpay.js";
 
 const serverRoot = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -18,6 +24,14 @@ const serverRoot = path.join(
 );
 dotenv.config({ path: path.join(serverRoot, ".env") });
 
+function requireLocation(body, res) {
+  const location = readLocation(body);
+  if (!location) {
+    res.status(400).json({ error: "Location access is required" });
+    return null;
+  }
+  return location;
+}
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CEO_TOPICS = new Set([
   "Product improvement",
@@ -53,6 +67,43 @@ function rateLimit(max, windowMs) {
     }
     recent.push(now);
     hits.set(key, recent);
+    return next();
+  };
+}
+
+const loginFailures = new Map();
+
+function recordLoginFailure(keys) {
+  const now = Date.now();
+  for (const key of keys) {
+    const recent = loginFailures.get(key) || [];
+    recent.push(now);
+    loginFailures.set(key, recent);
+  }
+}
+
+function adminLoginLimit(maxFailures, windowMs) {
+  return (req, res, next) => {
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    const keys = [`ip:${req.ip}`];
+    if (email) keys.push(`email:${email}`);
+    const now = Date.now();
+    for (const key of keys) {
+      const recent = (loginFailures.get(key) || []).filter(
+        (time) => now - time < windowMs,
+      );
+      loginFailures.set(key, recent);
+      if (recent.length >= maxFailures) {
+        return res
+          .status(429)
+          .json({ error: "Too many sign-in attempts. Try again later." });
+      }
+    }
+    const send = res.json.bind(res);
+    res.json = (body) => {
+      if (res.statusCode === 401) recordLoginFailure(keys);
+      return send(body);
+    };
     return next();
   };
 }
@@ -108,7 +159,8 @@ export function createApp(pool, uploadDir) {
   });
   app.use(express.json({ limit: "100kb" }));
 
-  const publicWrite = rateLimit(30, 60_000);
+  const publicWrite = rateLimit(8, 10 * 60_000);
+  const adminLogin = adminLoginLimit(5, 15 * 60_000);
 
   app.get("/api/health", async (_req, res, next) => {
     try {
@@ -125,15 +177,179 @@ export function createApp(pool, uploadDir) {
       if (!email || !EMAIL.test(email)) {
         return res.status(400).json({ error: "Enter a valid email address" });
       }
-      const inserted = await query(
+      const joined = await joinWaitlist(
         pool,
-        "INSERT IGNORE INTO waitlist_signups (id, email) VALUES (?, ?)",
-        [crypto.randomUUID(), email],
+        email,
+        req.body?.referralCode,
+        readLocation(req.body),
       );
+      scheduleSheetSync(pool);
+      return res.status(joined.status).json(joined.body);
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.get("/api/feature-votes", async (_req, res, next) => {
+    try {
+      const rows = await query(pool, "SELECT feature_id, votes FROM feature_votes");
+      const votes = {};
+      for (const row of rows) votes[row.feature_id] = Number(row.votes) || 0;
+      res.json({ votes });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/feature-votes/:id", rateLimit(60, 60_000), async (req, res, next) => {
+    try {
+      const id = String(req.params.id || "");
+      if (!Object.hasOwn(featureVoteIds(), id)) {
+        return res.status(404).json({ error: "Feature not found" });
+      }
+      await query(
+        pool,
+        "UPDATE feature_votes SET votes = votes + 1 WHERE feature_id = ?",
+        [id],
+      );
+      const rows = await query(
+        pool,
+        "SELECT votes FROM feature_votes WHERE feature_id = ?",
+        [id],
+      );
+      return res.json({ id, votes: Number(rows[0]?.votes) || 0 });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.get("/api/pulse-reads", async (_req, res, next) => {
+    try {
+      const rows = await query(pool, "SELECT slug, read_count FROM pulse_reads");
+      const reads = {};
+      for (const row of rows) reads[row.slug] = Number(row.read_count) || 0;
+      res.json({ reads });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/pulse-reads/:slug", publicWrite, async (req, res, next) => {
+    try {
+      const slug = String(req.params.slug || "");
+      if (!Object.hasOwn(pulseReadSlugs(), slug)) {
+        return res.status(404).json({ error: "Story not found" });
+      }
+      await query(
+        pool,
+        "UPDATE pulse_reads SET read_count = read_count + 1 WHERE slug = ?",
+        [slug],
+      );
+      const rows = await query(
+        pool,
+        "SELECT read_count FROM pulse_reads WHERE slug = ?",
+        [slug],
+      );
+      return res.json({ slug, reads: Number(rows[0]?.read_count) || 0 });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.get("/api/seed-progress", async (_req, res, next) => {
+    try {
+      const rows = await query(
+        pool,
+        `SELECT COALESCE(SUM(amount_inr), 0) AS raised, COUNT(*) AS backers
+         FROM seed_pledges WHERE status = 'paid'`,
+      );
+      res.json({
+        raised: Number(rows[0].raised) || 0,
+        goal: 10_000_000,
+        backers: Number(rows[0].backers) || 0,
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/seed-orders", publicWrite, async (req, res, next) => {
+    try {
+      const name = text(req.body?.name, 200);
+      const email = text(req.body?.email, 320)?.toLowerCase();
+      const amount = Number(req.body?.amount);
+      const note = String(req.body?.note ?? "").trim();
+      if (!name || !email || !EMAIL.test(email)) {
+        return res.status(400).json({ error: "Name and a valid email are required" });
+      }
+      if (!Number.isInteger(amount) || amount < 100 || amount > 1_000_000) {
+        return res.status(400).json({ error: "Choose an amount from ₹100 to ₹10,00,000" });
+      }
+      const location = requireLocation(req.body, res);
+      if (!location) return;
+      if (note.length > 500) {
+        return res.status(400).json({ error: "Note must be 500 characters or less" });
+      }
+      if (req.body?.nonRefundable !== true) {
+        return res.status(400).json({ error: "Confirm that this payment is non-refundable" });
+      }
+      const id = crypto.randomUUID();
+      let order;
+      try {
+        order = await createRazorpayOrder({ amountInr: amount, receipt: id });
+      } catch (error) {
+        return res.status(error.status || 502).json({ error: error.message });
+      }
+      await query(
+        pool,
+        `INSERT INTO seed_pledges
+           (id, name, email, amount_inr, subscription_months, note, razorpay_order_id, status, latitude, longitude)
+         VALUES (?, ?, ?, ?, 0, ?, ?, 'pending', ?, ?)`,
+        [id, name, email, amount, note || null, order.orderId, location.latitude, location.longitude],
+      );
+      scheduleSheetSync(pool);
       return res.status(201).json({
         ok: true,
-        alreadyJoined: inserted.affectedRows === 0,
+        pledgeId: id,
+        orderId: order.orderId,
+        amountPaise: order.amountPaise,
+        currency: "INR",
+        keyId: order.keyId,
       });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.post("/api/seed-payments/verify", publicWrite, async (req, res, next) => {
+    try {
+      const pledgeId = text(req.body?.pledgeId, 36);
+      const orderId = text(req.body?.razorpayOrderId, 64);
+      const paymentId = text(req.body?.razorpayPaymentId, 64);
+      const signature = text(req.body?.razorpaySignature, 128);
+      if (!pledgeId || !orderId || !paymentId || !signature) {
+        return res.status(400).json({ error: "Payment confirmation is incomplete" });
+      }
+      if (!verifyPaymentSignature(orderId, paymentId, signature)) {
+        return res.status(400).json({ error: "Payment could not be verified" });
+      }
+      const rows = await query(
+        pool,
+        "SELECT id, amount_inr, razorpay_order_id, status FROM seed_pledges WHERE id = ?",
+        [pledgeId],
+      );
+      const pledge = rows[0];
+      if (!pledge || pledge.razorpay_order_id !== orderId) {
+        return res.status(404).json({ error: "Pledge was not found" });
+      }
+      await query(
+        pool,
+        `UPDATE seed_pledges
+         SET status = 'paid', razorpay_payment_id = ?
+         WHERE id = ? AND razorpay_order_id = ?`,
+        [paymentId, pledgeId, orderId],
+      );
+      return res.json({ ok: true, amount: pledge.amount_inr });
     } catch (error) {
       return next(error);
     }
@@ -147,13 +363,16 @@ export function createApp(pool, uploadDir) {
       if (!name || !email || !EMAIL.test(email) || !message) {
         return res.status(400).json({ error: "Name, email, and message are required" });
       }
+      const location = requireLocation(req.body, res);
+      if (!location) return;
       const id = crypto.randomUUID();
       await query(
         pool,
-        `INSERT INTO contact_messages (id, name, email, message)
-         VALUES (?, ?, ?, ?)`,
-        [id, name, email, message],
+        `INSERT INTO contact_messages (id, name, email, message, latitude, longitude)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [id, name, email, message, location.latitude, location.longitude],
       );
+      scheduleSheetSync(pool);
       return res.status(201).json({ ok: true, id });
     } catch (error) {
       return next(error);
@@ -178,13 +397,16 @@ export function createApp(pool, uploadDir) {
       if (!message) {
         return res.status(400).json({ error: "Write your feedback or suggestion" });
       }
+      const location = requireLocation(req.body, res);
+      if (!location) return;
       const id = crypto.randomUUID();
       await query(
         pool,
-        `INSERT INTO ceo_office_messages (id, name, email, topic, message)
-         VALUES (?, ?, ?, ?, ?)`,
-        [id, name || null, email, topic || null, message],
+        `INSERT INTO ceo_office_messages (id, name, email, topic, message, latitude, longitude)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [id, name || null, email, topic || null, message, location.latitude, location.longitude],
       );
+      scheduleSheetSync(pool);
       try {
         await sendCeoOfficeNote({ id, name, email, topic, message });
         await query(
@@ -230,17 +452,20 @@ export function createApp(pool, uploadDir) {
       const fullName = text(req.body?.fullName, 200);
       const phone = text(req.body?.phone, 40);
       const experience = text(req.body?.experience, 80);
-      const location = text(req.body?.location, 200);
-      if (!fullName || !phone || !experience || !location) {
+      const city = text(req.body?.location, 200);
+      if (!fullName || !phone || !experience || !city) {
         return res.status(400).json({ error: "All partner fields are required" });
       }
+      const place = requireLocation(req.body, res);
+      if (!place) return;
       const id = crypto.randomUUID();
       await query(
         pool,
-        `INSERT INTO partner_applications (id, full_name, phone, experience, location)
-         VALUES (?, ?, ?, ?, ?)`,
-        [id, fullName, phone, experience, location],
+        `INSERT INTO partner_applications (id, full_name, phone, experience, location, latitude, longitude)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [id, fullName, phone, experience, city, place.latitude, place.longitude],
       );
+      scheduleSheetSync(pool);
       return res.status(201).json({ ok: true, id });
     } catch (error) {
       return next(error);
@@ -298,6 +523,11 @@ export function createApp(pool, uploadDir) {
             error: "Name, email, experience, resume, and a short note are required",
           });
         }
+        const place = requireLocation(req.body, res);
+        if (!place) {
+          if (req.file?.path) await fs.promises.unlink(req.file.path).catch(() => {});
+          return;
+        }
         const id = crypto.randomUUID();
         const ext = path.extname(req.file.originalname).toLowerCase();
         const storedName = resumeBucket
@@ -316,8 +546,9 @@ export function createApp(pool, uploadDir) {
             pool,
             `INSERT INTO job_applications (
                id, role_id, role_title, full_name, email, phone, linkedin_url,
-               experience, github_url, why_join, resume_filename, resume_stored_name
-             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+               experience, github_url, why_join, resume_filename, resume_stored_name,
+               latitude, longitude
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               id,
               roleId,
@@ -331,8 +562,11 @@ export function createApp(pool, uploadDir) {
               whyJoin,
               path.basename(req.file.originalname),
               storedName,
+              place.latitude,
+              place.longitude,
             ],
           );
+          scheduleSheetSync(pool);
         } catch (error) {
           if (resumeBucket) await deleteResume(resumeBucket, storedName);
           throw error;
@@ -345,7 +579,7 @@ export function createApp(pool, uploadDir) {
     },
   );
 
-  app.post("/api/admin/login", async (req, res, next) => {
+  app.post("/api/admin/login", adminLogin, async (req, res, next) => {
     try {
       const session = await loginAdmin(pool, req.body?.email, req.body?.password);
       if (!session) {
@@ -361,7 +595,25 @@ export function createApp(pool, uploadDir) {
     try {
       const items = await query(
         pool,
-        "SELECT id, email, created_at FROM waitlist_signups ORDER BY created_at DESC",
+        `SELECT s.id, s.email, s.referral_code, s.referred_by_code, s.reward_credits,
+                s.created_at,
+                (SELECT COUNT(*) FROM waitlist_signups c
+                  WHERE c.referred_by_code = s.referral_code) AS referral_count
+         FROM waitlist_signups s
+         ORDER BY s.created_at DESC`,
+      );
+      res.json({ items });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/admin/seed-pledges", requireAdmin, async (_req, res, next) => {
+    try {
+      const items = await query(
+        pool,
+        `SELECT id, name, email, amount_inr, status, razorpay_order_id, razorpay_payment_id, note, created_at
+         FROM seed_pledges ORDER BY created_at DESC`,
       );
       res.json({ items });
     } catch (error) {
@@ -482,7 +734,7 @@ export function createApp(pool, uploadDir) {
     ["/delete-account", "/delete-account/"],
     sendLegalPage("delete-account/index.html"),
   );
-  app.get(["/faqs", "/faqs/"], (req, res, next) => {
+  app.get(["/faqs", "/faqs/", "/pulsebhook", "/pulsebhook/", "/seedbhook", "/seedbhook/"], (req, res, next) => {
     const home = path.join(distDir, "index.html");
     if (!fs.existsSync(home)) return next();
     res.setHeader("Cache-Control", "public, max-age=0");
@@ -530,6 +782,7 @@ export async function start() {
   });
   const address = server.address();
   const boundPort = typeof address === "object" && address ? address.port : port;
+  scheduleSheetSync(pool);
   return { server, pool, port: boundPort };
 }
 

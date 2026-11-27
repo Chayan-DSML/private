@@ -27,7 +27,14 @@ function legalPagePaths() {
           req.url = `/privacy-policy/index.html${suffix}`;
         } else if (pathname === "/delete-account" || pathname === "/delete-account/") {
           req.url = `/delete-account/index.html${suffix}`;
-        } else if (pathname === "/faqs" || pathname === "/faqs/") {
+        } else if (
+          pathname === "/faqs" ||
+          pathname === "/faqs/" ||
+          pathname === "/pulsebhook" ||
+          pathname.startsWith("/pulsebhook/") ||
+          pathname === "/seedbhook" ||
+          pathname === "/seedbhook/"
+        ) {
           req.url = `/index.html${suffix}`;
         }
         next();
@@ -52,6 +59,11 @@ export default defineConfig({
     },
   },
   server: {
+    host: true,
+    allowedHosts: [
+      "9ae4facdd0ee05ac97b1-pod-qv2hcokhyretxeh3kcjxillqmi-5173.us3.cursorvm.com",
+      ".cursorvm.com",
+    ],
     proxy: {
       '/api': 'http://127.0.0.1:8787',
     },
