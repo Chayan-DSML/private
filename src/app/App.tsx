@@ -3524,7 +3524,7 @@ export default function App() {
                     </div>
                     <div className="mx-auto max-w-5xl px-6 pb-24 md:px-8">
                       <div className="border-t border-slate-200">
-                        {PULSE_ARTICLES.map((item, index) => (
+                        {PULSE_ARTICLES.map((item) => (
                           <button
                             key={item.slug}
                             type="button"
@@ -3533,7 +3533,7 @@ export default function App() {
                           >
                             <div>
                               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-600">{item.date}</div>
-                              <h2 className={`mt-3 font-bold tracking-tight text-slate-900 ${index === 0 ? "text-3xl md:text-5xl" : "text-2xl md:text-4xl"}`}>
+                              <h2 className="mt-3 text-2xl font-bold tracking-tight text-slate-900 md:text-4xl">
                                 {item.title}
                               </h2>
                               <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 md:text-lg">
