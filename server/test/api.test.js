@@ -1,8 +1,10 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import crypto from "node:crypto";
 import test from "node:test";
 import assert from "node:assert/strict";
+import { verifyPaymentSignature } from "../src/razorpay.js";
 
 process.env.DATABASE_HOST = process.env.DATABASE_HOST || "127.0.0.1";
 process.env.DATABASE_PORT = process.env.DATABASE_PORT || "3306";
@@ -56,6 +58,23 @@ test.after(async () => {
   ]);
   await started.pool.end();
   started.server.close();
+});
+
+test("razorpay signature matches the order and payment", () => {
+  const previousId = process.env.RAZORPAY_KEY_ID;
+  const previousSecret = process.env.RAZORPAY_KEY_SECRET;
+  process.env.RAZORPAY_KEY_ID = "rzp_test_key";
+  process.env.RAZORPAY_KEY_SECRET = "test-secret";
+  const signature = crypto
+    .createHmac("sha256", "test-secret")
+    .update("order_123|pay_456")
+    .digest("hex");
+  assert.equal(verifyPaymentSignature("order_123", "pay_456", signature), true);
+  assert.equal(verifyPaymentSignature("order_123", "pay_456", "deadbeef"), false);
+  if (previousId === undefined) delete process.env.RAZORPAY_KEY_ID;
+  else process.env.RAZORPAY_KEY_ID = previousId;
+  if (previousSecret === undefined) delete process.env.RAZORPAY_KEY_SECRET;
+  else process.env.RAZORPAY_KEY_SECRET = previousSecret;
 });
 
 test("health check reaches MySQL", async () => {
@@ -147,37 +166,39 @@ test("referral codes are unique and counted for the referrer", async () => {
   assert.equal(Number(row.reward_credits), 1);
 });
 
-test("seed pledges store subscription months and reject amounts outside the range", async () => {
-  const low = await fetch(`${base}/api/seed-pledges`, {
+test("seed payments reject amounts outside the range and a bad signature", async () => {
+  const low = await fetch(`${base}/api/seed-orders`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name: "Ada", email: "ada@example.com", amount: 50 }),
   });
   assert.equal(low.status, 400);
 
-  const high = await fetch(`${base}/api/seed-pledges`, {
+  const high = await fetch(`${base}/api/seed-orders`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name: "Ada", email: "ada@example.com", amount: 1000001 }),
   });
   assert.equal(high.status, 400);
 
-  const created = await fetch(`${base}/api/seed-pledges`, {
+  const created = await fetch(`${base}/api/seed-orders`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name: "Ada Lovelace", email: "ada@example.com", amount: 1200 }),
   });
-  assert.equal(created.status, 201);
-  assert.equal((await created.json()).subscriptionMonths, 12);
+  assert.equal(created.status, 503);
 
-  const token = await login();
-  const opened = await fetch(`${base}/api/admin/seed-pledges`, {
-    headers: { Authorization: `Bearer ${token}` },
+  const verify = await fetch(`${base}/api/seed-payments/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      pledgeId: "11111111-1111-1111-1111-111111111111",
+      razorpayOrderId: "order_test",
+      razorpayPaymentId: "pay_test",
+      razorpaySignature: "not-a-real-signature",
+    }),
   });
-  const items = (await opened.json()).items;
-  assert.equal(items[0].email, "ada@example.com");
-  assert.equal(Number(items[0].amount_inr), 1200);
-  assert.equal(Number(items[0].subscription_months), 12);
+  assert.equal(verify.status, 400);
 
   const locked = await fetch(`${base}/api/admin/seed-pledges`);
   assert.equal(locked.status, 401);

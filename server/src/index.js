@@ -12,6 +12,10 @@ import { createPool, migrate, query } from "./db.js";
 import { sendCeoOfficeNote } from "./ceoMail.js";
 import { deleteResume, isCloudResume, openResume, saveResume } from "./resumes.js";
 import { joinWaitlist } from "./waitlist.js";
+import {
+  createRazorpayOrder,
+  verifyPaymentSignature,
+} from "./razorpay.js";
 
 const serverRoot = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -171,7 +175,7 @@ export function createApp(pool, uploadDir) {
     }
   });
 
-  app.post("/api/seed-pledges", publicWrite, async (req, res, next) => {
+  app.post("/api/seed-orders", publicWrite, async (req, res, next) => {
     try {
       const name = text(req.body?.name, 200);
       const email = text(req.body?.email, 320)?.toLowerCase();
@@ -186,20 +190,62 @@ export function createApp(pool, uploadDir) {
       if (note.length > 500) {
         return res.status(400).json({ error: "Note must be 500 characters or less" });
       }
-      const months = Math.floor(amount / 100);
       const id = crypto.randomUUID();
+      let order;
+      try {
+        order = await createRazorpayOrder({ amountInr: amount, receipt: id });
+      } catch (error) {
+        return res.status(error.status || 502).json({ error: error.message });
+      }
       await query(
         pool,
-        `INSERT INTO seed_pledges (id, name, email, amount_inr, subscription_months, note)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [id, name, email, amount, months, note || null],
+        `INSERT INTO seed_pledges
+           (id, name, email, amount_inr, subscription_months, note, razorpay_order_id, status)
+         VALUES (?, ?, ?, ?, 0, ?, ?, 'pending')`,
+        [id, name, email, amount, note || null, order.orderId],
       );
       return res.status(201).json({
         ok: true,
-        id,
-        amount,
-        subscriptionMonths: months,
+        pledgeId: id,
+        orderId: order.orderId,
+        amountPaise: order.amountPaise,
+        currency: "INR",
+        keyId: order.keyId,
       });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.post("/api/seed-payments/verify", publicWrite, async (req, res, next) => {
+    try {
+      const pledgeId = text(req.body?.pledgeId, 36);
+      const orderId = text(req.body?.razorpayOrderId, 64);
+      const paymentId = text(req.body?.razorpayPaymentId, 64);
+      const signature = text(req.body?.razorpaySignature, 128);
+      if (!pledgeId || !orderId || !paymentId || !signature) {
+        return res.status(400).json({ error: "Payment confirmation is incomplete" });
+      }
+      if (!verifyPaymentSignature(orderId, paymentId, signature)) {
+        return res.status(400).json({ error: "Payment could not be verified" });
+      }
+      const rows = await query(
+        pool,
+        "SELECT id, amount_inr, razorpay_order_id, status FROM seed_pledges WHERE id = ?",
+        [pledgeId],
+      );
+      const pledge = rows[0];
+      if (!pledge || pledge.razorpay_order_id !== orderId) {
+        return res.status(404).json({ error: "Pledge was not found" });
+      }
+      await query(
+        pool,
+        `UPDATE seed_pledges
+         SET status = 'paid', razorpay_payment_id = ?
+         WHERE id = ? AND razorpay_order_id = ?`,
+        [paymentId, pledgeId, orderId],
+      );
+      return res.json({ ok: true, amount: pledge.amount_inr });
     } catch (error) {
       return next(error);
     }
@@ -444,7 +490,7 @@ export function createApp(pool, uploadDir) {
     try {
       const items = await query(
         pool,
-        `SELECT id, name, email, amount_inr, subscription_months, note, created_at
+        `SELECT id, name, email, amount_inr, status, razorpay_order_id, razorpay_payment_id, note, created_at
          FROM seed_pledges ORDER BY created_at DESC`,
       );
       res.json({ items });

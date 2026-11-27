@@ -59,6 +59,7 @@ export async function migrate(pool) {
     );
   }
   await ensureWaitlistReferrals(pool);
+  await ensureSeedPayments(pool);
 }
 
 async function ensureColumn(pool, table, column, definition) {
@@ -113,4 +114,25 @@ async function ensureWaitlistReferrals(pool) {
       "ALTER TABLE waitlist_signups ADD UNIQUE KEY waitlist_referral_code (referral_code)",
     );
   }
+}
+
+async function ensureSeedPayments(pool) {
+  await ensureColumn(
+    pool,
+    "seed_pledges",
+    "razorpay_order_id",
+    "VARCHAR(64) NULL",
+  );
+  await ensureColumn(
+    pool,
+    "seed_pledges",
+    "razorpay_payment_id",
+    "VARCHAR(64) NULL",
+  );
+  await ensureColumn(
+    pool,
+    "seed_pledges",
+    "status",
+    "VARCHAR(20) NOT NULL DEFAULT 'pending'",
+  );
 }

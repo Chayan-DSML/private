@@ -187,8 +187,28 @@ const PULSE_POSTS = [
 
 const SEED_MIN = 100;
 const SEED_MAX = 1_000_000;
-const RUPEES_PER_MONTH = 100;
 const SEED_EXAMPLES = [100, 1_200, 12_000, 1_00_000, 10_00_000];
+
+function loadRazorpay() {
+  if (typeof window === "undefined") return Promise.resolve(false);
+  if (window.Razorpay) return Promise.resolve(true);
+  return new Promise<boolean>((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: Record<string, unknown>) => {
+      open: () => void;
+      on: (event: string, handler: () => void) => void;
+    };
+  }
+}
 
 function formatInr(amount: number) {
   return new Intl.NumberFormat("en-IN", {
@@ -196,16 +216,6 @@ function formatInr(amount: number) {
     currency: "INR",
     maximumFractionDigits: 0,
   }).format(amount);
-}
-
-function subscriptionFor(amount: number) {
-  const months = Math.floor(amount / RUPEES_PER_MONTH);
-  const years = Math.floor(months / 12);
-  const remainder = months % 12;
-  const parts: string[] = [];
-  if (years) parts.push(`${years} year${years === 1 ? "" : "s"}`);
-  if (remainder) parts.push(`${remainder} month${remainder === 1 ? "" : "s"}`);
-  return { months, label: parts.join(" and ") || "0 months" };
 }
 
 function clampSeedAmount(value: number) {
@@ -419,18 +429,60 @@ export default function App() {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
     const amount = applySeedAmount(Number(seedAmountInput));
+    const name = String(data.get("name") || "");
+    const email = String(data.get("email") || "");
     setSeedError("");
     setSeedPending(true);
     try {
-      await postJson("/api/seed-pledges", {
-        name: String(data.get("name") || ""),
-        email: String(data.get("email") || ""),
+      const order = await postJson("/api/seed-orders", {
+        name,
+        email,
         amount,
         note: String(data.get("note") || ""),
       });
-      setSeedSubmitted(true);
+      const ready = await loadRazorpay();
+      if (!ready || !window.Razorpay) {
+        throw new Error("Could not open the payment window");
+      }
+      setSeedPending(false);
+      await new Promise<void>((resolve, reject) => {
+        const checkout = new window.Razorpay!({
+          key: order.keyId,
+          amount: order.amountPaise,
+          currency: "INR",
+          name: "TourBhook",
+          description: "seedBhook",
+          order_id: order.orderId,
+          prefill: { name, email },
+          handler: async (response: {
+            razorpay_order_id: string;
+            razorpay_payment_id: string;
+            razorpay_signature: string;
+          }) => {
+            try {
+              await postJson("/api/seed-payments/verify", {
+                pledgeId: order.pledgeId,
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+              });
+              setSeedSubmitted(true);
+              resolve();
+            } catch (err) {
+              reject(err);
+            }
+          },
+          modal: {
+            ondismiss: () => resolve(),
+          },
+        });
+        checkout.on("payment.failed", () => {
+          reject(new Error("Payment did not go through. You can try again."));
+        });
+        checkout.open();
+      });
     } catch (err) {
-      setSeedError(err instanceof Error ? err.message : "Could not save that pledge");
+      setSeedError(err instanceof Error ? err.message : "Could not start the payment");
     } finally {
       setSeedPending(false);
     }
@@ -3402,9 +3454,9 @@ export default function App() {
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-teal-300">
                   <Gift className="h-3.5 w-3.5" /> seedBhook
                 </div>
-                <h1 className="mb-4 text-4xl font-bold md:text-6xl">Back TourBhook. Get the app for the same value.</h1>
+                <h1 className="mb-4 text-4xl font-bold md:text-6xl">Back TourBhook with the amount you choose.</h1>
                 <p className="text-lg text-slate-300">
-                  Reward-based crowdfunding. You give from {formatInr(SEED_MIN)} to {formatInr(SEED_MAX)}. Every {formatInr(RUPEES_PER_MONTH)} becomes one month of TourBhook, credited to your email in the app.
+                  Reward-based crowdfunding. Pay anywhere from {formatInr(SEED_MIN)} to {formatInr(SEED_MAX)} through Razorpay.
                 </p>
               </div>
             </div>
@@ -3412,9 +3464,9 @@ export default function App() {
               <div>
                 <div className="mb-8 grid gap-4 sm:grid-cols-3">
                   {[
-                    ["1", "Choose an amount", "Anywhere from ₹100 to ₹10,00,000, in steps of ₹100."],
-                    ["2", "Back the product", "This is a perk, not a share of the company."],
-                    ["3", "Receive the subscription", "The months are stored for that email and applied in the app."],
+                    ["1", "Choose an amount", "Anywhere from ₹100 to ₹10,00,000."],
+                    ["2", "Pay with Razorpay", "This is a perk, not a share of the company."],
+                    ["3", "You're in", "We record the payment against the email you enter."],
                   ].map(([step, title, body]) => (
                     <div key={step} className="rounded-2xl border border-slate-200 bg-white p-5">
                       <div className="mb-2 text-xs font-bold uppercase tracking-widest text-teal-600">Step {step}</div>
@@ -3423,11 +3475,9 @@ export default function App() {
                     </div>
                   ))}
                 </div>
-                <h2 className="mb-4 text-2xl font-bold text-slate-900">What each amount is worth</h2>
+                <h2 className="mb-4 text-2xl font-bold text-slate-900">Or pick an amount</h2>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {SEED_EXAMPLES.map((amount) => {
-                    const perk = subscriptionFor(amount);
-                    return (
+                  {SEED_EXAMPLES.map((amount) => (
                       <button
                         key={amount}
                         type="button"
@@ -3435,19 +3485,17 @@ export default function App() {
                         className={`rounded-2xl border p-4 text-left transition ${seedAmount === amount ? "border-teal-500 bg-teal-50" : "border-slate-200 bg-white hover:border-teal-200"}`}
                       >
                         <div className="text-lg font-bold text-slate-900">{formatInr(amount)}</div>
-                        <div className="text-sm text-slate-500">{perk.label} of TourBhook</div>
                       </button>
-                    );
-                  })}
+                  ))}
                 </div>
               </div>
               <div className="h-fit rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-24">
                 {seedSubmitted ? (
                   <div className="py-8 text-center">
                     <CheckCircle className="mx-auto mb-4 h-12 w-12 text-teal-500" />
-                    <h2 className="mb-2 text-2xl font-bold text-slate-900">Pledge reserved</h2>
+                    <h2 className="mb-2 text-2xl font-bold text-slate-900">Payment received</h2>
                     <p className="text-slate-500">
-                      {formatInr(seedAmount)} is {subscriptionFor(seedAmount).label} of TourBhook. That credit is stored for your email and applied in the app. We confirm payment with you before anything is charged.
+                      {formatInr(seedAmount)} is recorded for your email.
                     </p>
                   </div>
                 ) : (
@@ -3455,7 +3503,6 @@ export default function App() {
                     <div>
                       <div className="mb-1 text-sm font-semibold text-slate-500">Your pledge</div>
                       <div className="text-4xl font-bold text-slate-900">{formatInr(seedAmount)}</div>
-                      <p className="mt-1 text-teal-700">{subscriptionFor(seedAmount).label} of the TourBhook app</p>
                     </div>
                     <label className="block text-sm font-semibold text-slate-700">
                       Amount
@@ -3482,7 +3529,7 @@ export default function App() {
                       <input name="name" required maxLength={200} placeholder="Your name" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-normal focus:outline-none focus:ring-2 focus:ring-teal-500" />
                     </label>
                     <label className="block text-sm font-semibold text-slate-700">
-                      Email for the subscription
+                      Email
                       <input name="email" type="email" required maxLength={320} placeholder="you@email.com" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-normal focus:outline-none focus:ring-2 focus:ring-teal-500" />
                     </label>
                     <label className="block text-sm font-semibold text-slate-700">
@@ -3491,10 +3538,10 @@ export default function App() {
                     </label>
                     {seedError ? <p className="text-sm text-red-600">{seedError}</p> : null}
                     <button type="submit" disabled={seedPending} className="w-full rounded-xl bg-slate-900 py-3 font-bold text-white transition hover:bg-slate-800 disabled:opacity-50">
-                      {seedPending ? "Saving..." : `Reserve ${formatInr(seedAmount)}`}
+                      {seedPending ? "Opening payment..." : `Pay ${formatInr(seedAmount)}`}
                     </button>
                     <p className="text-xs leading-relaxed text-slate-500">
-                      seedBhook does not sell shares. Backers receive TourBhook subscription time equal to the pledge. ₹100 is one month.
+                      seedBhook does not sell shares. You pay the amount you choose through Razorpay.
                     </p>
                   </form>
                 )}

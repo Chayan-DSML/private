@@ -26,6 +26,9 @@ CREATE TABLE IF NOT EXISTS seed_pledges (
   amount_inr INT NOT NULL,
   subscription_months INT NOT NULL,
   note VARCHAR(500) NULL,
+  razorpay_order_id VARCHAR(64) NULL,
+  razorpay_payment_id VARCHAR(64) NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',
   created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
 );
 
