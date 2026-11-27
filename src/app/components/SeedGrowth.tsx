@@ -1,6 +1,16 @@
 const SEED_MIN = 100;
 const SEED_MAX = 1_000_000;
 
+function pourStyle(duration: string, delay = "0s") {
+  return {
+    animationName: "seed-pour",
+    animationDuration: duration,
+    animationTimingFunction: "ease-in",
+    animationIterationCount: "infinite",
+    animationDelay: delay,
+  };
+}
+
 function growth(amount: number) {
   const span = Math.log(SEED_MAX / SEED_MIN);
   const progress = Math.min(1, Math.max(0, Math.log(Math.max(amount, SEED_MIN) / SEED_MIN) / span));
@@ -14,10 +24,10 @@ function growth(amount: number) {
   };
 }
 
-export function SeedGrowth({ amount }: { amount: number }) {
+export function SeedGrowth({ amount, light = false }: { amount: number; light?: boolean }) {
   const stage = growth(amount);
   return (
-    <figure className="mx-auto mb-8 w-full max-w-sm text-center">
+    <figure className="mx-auto w-full max-w-sm text-center">
       <style>{`
         @keyframes seed-pour {
           0% { transform: translateY(-6px); opacity: 0; }
@@ -25,16 +35,16 @@ export function SeedGrowth({ amount }: { amount: number }) {
           100% { transform: translateY(78px); opacity: 0; }
         }
       `}</style>
-      <svg viewBox="0 0 220 260" className="mx-auto h-64 w-full" aria-hidden="true">
+      <svg viewBox="20 10 180 230" className="mx-auto h-56 w-full" aria-hidden="true">
         <ellipse cx="110" cy="214" rx="78" ry="16" fill="#e2e8f0" />
         <path d="M48 206c18 16 106 16 124 0 4 10-8 22-62 22s-66-12-62-22z" fill="#cbd5e1" />
-        <g style={{ animation: `seed-pour ${stage.pour} ease-in infinite` }}>
+        <g style={pourStyle(stage.pour)}>
           <ellipse cx="118" cy="28" rx="4" ry="7" fill="#00d2eb" />
         </g>
-        <g style={{ animation: `seed-pour ${stage.pour} ease-in infinite`, animationDelay: "0.35s" }}>
+        <g style={pourStyle(stage.pour, "0.35s")}>
           <ellipse cx="108" cy="18" rx="3.2" ry="6" fill="#4adff3" />
         </g>
-        <g style={{ animation: `seed-pour ${stage.pour} ease-in infinite`, animationDelay: "0.7s" }}>
+        <g style={pourStyle(stage.pour, "0.7s")}>
           <ellipse cx="128" cy="22" rx="3" ry="5.5" fill="#0097b3" />
         </g>
         <g
@@ -87,13 +97,13 @@ export function SeedGrowth({ amount }: { amount: number }) {
           <circle cx="138" cy="122" r="26" fill="#0097b3" />
           <circle cx="118" cy="92" r="20" fill="#4adff3" />
           <g style={{ opacity: stage.fruit, transition: "opacity 600ms ease" }}>
-            <circle cx="96" cy="118" r="7" fill="#007892" />
-            <circle cx="128" cy="104" r="7" fill="#005c70" />
-            <circle cx="122" cy="136" r="6.5" fill="#007892" />
+            <circle cx="96" cy="118" r="7" fill="#f6c453" />
+            <circle cx="128" cy="104" r="7" fill="#e3a008" />
+            <circle cx="122" cy="136" r="6.5" fill="#f6c453" />
           </g>
         </g>
       </svg>
-      <figcaption className="px-4 text-sm font-medium text-slate-600">
+      <figcaption className={`px-4 text-sm font-medium ${light ? "text-slate-200" : "text-slate-600"}`}>
         The more you fund, the faster this seed becomes a plant, then a tree, then fruit.
       </figcaption>
     </figure>

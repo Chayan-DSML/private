@@ -3475,6 +3475,7 @@ export default function App() {
                 <p className="text-lg text-slate-300">
                   Fund TourBhook in the portion you choose, from {formatInr(SEED_MIN)} to {formatInr(SEED_MAX)}. Every contribution is non-refundable.
                 </p>
+                <SeedGrowth amount={seedAmount} light />
                 <div className="mx-auto mt-8 max-w-xl text-left">
                   <div className="mb-2 flex justify-between text-sm text-slate-300">
                     <span>{formatInr(seedRaised)} raised</span>
@@ -3491,7 +3492,6 @@ export default function App() {
             </div>
             <div className="mx-auto grid max-w-6xl gap-8 px-6 py-16 lg:grid-cols-[1.1fr_0.9fr]">
               <div>
-                <SeedGrowth amount={seedAmount} />
                 <div className="mb-8 grid gap-4 sm:grid-cols-3">
                   {[
                     ["1", "Choose your portion", "From ₹100 up to ₹10,00,000."],
