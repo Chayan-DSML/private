@@ -188,6 +188,7 @@ const PULSE_POSTS = [
 
 const SEED_MIN = 100;
 const SEED_MAX = 1_000_000;
+const SEED_GOAL = 1_00_00_000;
 const SEED_EXAMPLES = [100, 1_200, 12_000, 1_00_000, 10_00_000];
 
 function loadRazorpay() {
@@ -258,6 +259,8 @@ export default function App() {
   const [seedSubmitted, setSeedSubmitted] = useState(false);
   const [seedError, setSeedError] = useState("");
   const [seedPending, setSeedPending] = useState(false);
+  const [seedRaised, setSeedRaised] = useState(0);
+  const [seedAccepted, setSeedAccepted] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [waitlistSubmitted, setWaitlistSubmitted] =
     useState(false);
@@ -347,6 +350,20 @@ export default function App() {
     }
     window.scrollTo(0, 0);
   }, [currentPage]);
+
+  useEffect(() => {
+    if (currentPage !== "seed") return;
+    let ignore = false;
+    fetch("/api/seed-progress")
+      .then((response) => response.json())
+      .then((data) => {
+        if (!ignore) setSeedRaised(Number(data.raised) || 0);
+      })
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, [currentPage, seedSubmitted]);
 
   useEffect(() => {
     const onPop = () => {
@@ -440,6 +457,7 @@ export default function App() {
         email,
         amount,
         note: String(data.get("note") || ""),
+        nonRefundable: true,
       });
       const ready = await loadRazorpay();
       if (!ready || !window.Razorpay) {
@@ -3453,10 +3471,22 @@ export default function App() {
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-teal-300">
                   <Gift className="h-3.5 w-3.5" /> seedBhook
                 </div>
-                <h1 className="mb-4 text-4xl font-bold md:text-6xl">Back TourBhook with the amount you choose.</h1>
+                <h1 className="mb-4 text-4xl font-bold md:text-6xl">Help us raise ₹1 crore.</h1>
                 <p className="text-lg text-slate-300">
-                  Reward-based crowdfunding. Pay anywhere from {formatInr(SEED_MIN)} to {formatInr(SEED_MAX)} through Razorpay.
+                  Fund TourBhook in the portion you choose, from {formatInr(SEED_MIN)} to {formatInr(SEED_MAX)}. Every contribution is non-refundable.
                 </p>
+                <div className="mx-auto mt-8 max-w-xl text-left">
+                  <div className="mb-2 flex justify-between text-sm text-slate-300">
+                    <span>{formatInr(seedRaised)} raised</span>
+                    <span>Goal {formatInr(SEED_GOAL)}</span>
+                  </div>
+                  <div className="h-3 overflow-hidden rounded-full bg-white/15">
+                    <div
+                      className="h-full rounded-full bg-[#00d2eb]"
+                      style={{ width: `${Math.min(100, (seedRaised / SEED_GOAL) * 100)}%` }}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
             <div className="mx-auto grid max-w-6xl gap-8 px-6 py-16 lg:grid-cols-[1.1fr_0.9fr]">
@@ -3464,9 +3494,9 @@ export default function App() {
                 <SeedGrowth amount={seedAmount} />
                 <div className="mb-8 grid gap-4 sm:grid-cols-3">
                   {[
-                    ["1", "Choose an amount", "Anywhere from ₹100 to ₹10,00,000."],
-                    ["2", "Pay with Razorpay", "This is a perk, not a share of the company."],
-                    ["3", "You're in", "We record the payment against the email you enter."],
+                    ["1", "Choose your portion", "From ₹100 up to ₹10,00,000."],
+                    ["2", "Pay with Razorpay", "Payments are non-refundable."],
+                    ["3", "Watch it grow", "A larger portion grows the seed faster."],
                   ].map(([step, title, body]) => (
                     <div key={step} className="rounded-2xl border border-slate-200 bg-white p-5">
                       <div className="mb-2 text-xs font-bold uppercase tracking-widest text-teal-600">Step {step}</div>
@@ -3495,7 +3525,7 @@ export default function App() {
                     <CheckCircle className="mx-auto mb-4 h-12 w-12 text-teal-500" />
                     <h2 className="mb-2 text-2xl font-bold text-slate-900">Payment received</h2>
                     <p className="text-slate-500">
-                      {formatInr(seedAmount)} is recorded for your email.
+                      {formatInr(seedAmount)} is recorded. This contribution is non-refundable.
                     </p>
                   </div>
                 ) : (
@@ -3536,12 +3566,21 @@ export default function App() {
                       Note <span className="font-normal text-slate-400">(optional)</span>
                       <textarea name="note" rows={3} maxLength={500} placeholder="Anything you want us to know" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-normal focus:outline-none focus:ring-2 focus:ring-teal-500" />
                     </label>
+                    <label className="flex items-start gap-3 text-sm text-slate-600">
+                      <input
+                        type="checkbox"
+                        checked={seedAccepted}
+                        onChange={(e) => setSeedAccepted(e.target.checked)}
+                        className="mt-1 h-4 w-4 accent-[#00d2eb]"
+                      />
+                      <span>I understand this contribution is non-refundable.</span>
+                    </label>
                     {seedError ? <p className="text-sm text-red-600">{seedError}</p> : null}
-                    <button type="submit" disabled={seedPending} className="w-full rounded-xl bg-slate-900 py-3 font-bold text-white transition hover:bg-slate-800 disabled:opacity-50">
+                    <button type="submit" disabled={seedPending || !seedAccepted} className="w-full rounded-xl bg-slate-900 py-3 font-bold text-white transition hover:bg-slate-800 disabled:opacity-50">
                       {seedPending ? "Opening payment..." : `Pay ${formatInr(seedAmount)}`}
                     </button>
                     <p className="text-xs leading-relaxed text-slate-500">
-                      seedBhook does not sell shares. You pay the amount you choose through Razorpay.
+                      seedBhook does not sell shares. Portions add up to a ₹1 crore goal, and they are not returned.
                     </p>
                   </form>
                 )}

@@ -175,6 +175,23 @@ export function createApp(pool, uploadDir) {
     }
   });
 
+  app.get("/api/seed-progress", async (_req, res, next) => {
+    try {
+      const rows = await query(
+        pool,
+        `SELECT COALESCE(SUM(amount_inr), 0) AS raised, COUNT(*) AS backers
+         FROM seed_pledges WHERE status = 'paid'`,
+      );
+      res.json({
+        raised: Number(rows[0].raised) || 0,
+        goal: 10_000_000,
+        backers: Number(rows[0].backers) || 0,
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.post("/api/seed-orders", publicWrite, async (req, res, next) => {
     try {
       const name = text(req.body?.name, 200);
@@ -189,6 +206,9 @@ export function createApp(pool, uploadDir) {
       }
       if (note.length > 500) {
         return res.status(400).json({ error: "Note must be 500 characters or less" });
+      }
+      if (req.body?.nonRefundable !== true) {
+        return res.status(400).json({ error: "Confirm that this payment is non-refundable" });
       }
       const id = crypto.randomUUID();
       let order;

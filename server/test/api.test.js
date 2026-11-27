@@ -184,9 +184,16 @@ test("seed payments reject amounts outside the range and a bad signature", async
   const created = await fetch(`${base}/api/seed-orders`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: "Ada Lovelace", email: "ada@example.com", amount: 1200 }),
+    body: JSON.stringify({ name: "Ada Lovelace", email: "ada@example.com", amount: 1200, nonRefundable: true }),
   });
   assert.equal(created.status, 503);
+
+  const progress = await fetch(`${base}/api/seed-progress`);
+  const progressBody = await progress.json();
+  assert.equal(progress.status, 200);
+  assert.equal(progressBody.goal, 10000000);
+  assert.equal(typeof progressBody.raised, "number");
+  assert.equal(progressBody.email, undefined);
 
   const verify = await fetch(`${base}/api/seed-payments/verify`, {
     method: "POST",
