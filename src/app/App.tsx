@@ -145,7 +145,6 @@ type PulseArticle = {
   dek?: string;
   image?: string;
   imageAlt?: string;
-  imageWide?: boolean;
   sections: PulseSection[];
 };
 
@@ -159,7 +158,6 @@ const PULSE_ARTICLES: PulseArticle[] = [
     image: "/pulse/budget-first-ecosystem.jpg",
     imageAlt:
       "TourBhook graphic of a traveller above a hill town, with the app and budget-first planning, reviews, and traveller communities",
-    imageWide: true,
     sections: [
       {
         heading: "",
@@ -3531,7 +3529,7 @@ export default function App() {
                             key={item.slug}
                             type="button"
                             onClick={() => openPulse(item.slug)}
-                            className={`grid w-full border-b border-slate-200 py-12 text-left md:items-center ${item.image && !item.imageWide ? "gap-8 md:grid-cols-[minmax(0,1fr)_18rem]" : ""}`}
+                            className={`grid w-full gap-8 border-b border-slate-200 py-12 text-left md:items-center ${item.image ? "md:grid-cols-[minmax(0,1fr)_18rem]" : ""}`}
                           >
                             <div>
                               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-600">{item.date}</div>
@@ -3550,11 +3548,7 @@ export default function App() {
                               <img
                                 src={item.image}
                                 alt={item.imageAlt}
-                                className={
-                                  item.imageWide
-                                    ? "mt-8 w-full rounded-2xl"
-                                    : "aspect-[4/3] w-full rounded-2xl object-cover"
-                                }
+                                className="aspect-[4/3] w-full rounded-2xl object-cover"
                               />
                             ) : null}
                           </button>
@@ -3592,15 +3586,14 @@ export default function App() {
                       {article.dek ? <p className="mt-6 text-lg text-slate-300">{article.dek}</p> : null}
                     </div>
                   </div>
-                  <div className={`mx-auto px-6 py-12 ${article.imageWide ? "max-w-5xl" : "max-w-3xl"}`}>
+                  <div className="mx-auto max-w-3xl px-6 py-12">
                     {article.image ? (
                       <img
                         src={article.image}
                         alt={article.imageAlt}
-                        className={`mb-10 w-full rounded-3xl ${article.imageWide ? "" : "object-cover"}`}
+                        className="mb-10 w-full rounded-3xl object-cover"
                       />
                     ) : null}
-                    <div className={article.imageWide ? "mx-auto max-w-3xl" : ""}>
                     {article.sections.map((section) => (
                       <section key={section.heading || "lede"} className="mb-10">
                         {section.heading ? (
@@ -3619,7 +3612,6 @@ export default function App() {
                         ) : null}
                       </section>
                     ))}
-                    </div>
                   </div>
                 </article>
               );
