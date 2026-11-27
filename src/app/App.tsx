@@ -361,6 +361,7 @@ export default function App() {
     url: string;
     count: number;
     referredByCode: string | null;
+    alreadyJoined: boolean;
   } | null>(null);
   const [seedAmount, setSeedAmount] = useState(1200);
   const [seedAmountInput, setSeedAmountInput] = useState("1200");
@@ -572,6 +573,7 @@ export default function App() {
         url: data.referralUrl,
         count: Number(data.referralCount) || 0,
         referredByCode: data.referredByCode || null,
+        alreadyJoined: Boolean(data.alreadyJoined),
       });
       setWaitlistSubmitted(true);
     } catch (err) {
@@ -1478,8 +1480,14 @@ export default function App() {
                       <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-teal-50">
                         <CheckCircle className="h-8 w-8 text-teal-600" />
                       </div>
-                      <p className="mb-1 text-2xl font-bold text-slate-900">You're on the list!</p>
-                      <p className="mb-8 text-slate-500">We'll reach out as soon as we launch. Share with friends to move up the queue.</p>
+                      <p className="mb-1 text-2xl font-bold text-slate-900">
+                        {referralOffer?.alreadyJoined ? "You're already on the list" : "You're on the list!"}
+                      </p>
+                      <p className="mb-8 text-slate-500">
+                        {referralOffer?.alreadyJoined
+                          ? "This email already has a referral link. Here is the same one created the first time."
+                          : "We'll reach out as soon as we launch. Share with friends to move up the queue."}
+                      </p>
                       <div className="mx-auto max-w-md rounded-2xl border border-teal-100 bg-teal-50 p-6 text-left">
                         <p className="mb-3 text-sm font-semibold text-teal-800">Your referral link</p>
                         <div className="mb-3 flex items-center gap-2 rounded-xl border border-teal-200 bg-white px-4 py-2.5 text-sm text-slate-600">
