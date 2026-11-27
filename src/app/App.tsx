@@ -348,6 +348,7 @@ export default function App() {
   const initialLocation = locationState();
   const [currentPage, setCurrentPage] = useState<Page>(initialLocation.page);
   const [pulseSlug, setPulseSlug] = useState<string | null>(initialLocation.pulseSlug);
+  const [pulseReads, setPulseReads] = useState<Record<string, number>>({});
   const incomingReferral = useRef(
     typeof window === "undefined"
       ? ""
@@ -465,6 +466,29 @@ export default function App() {
       return () => cancelAnimationFrame(frame);
     }
     window.scrollTo(0, 0);
+  }, [currentPage, pulseSlug]);
+
+  useEffect(() => {
+    if (currentPage !== "pulse") return;
+    let ignore = false;
+    const slug = pulseSlug;
+    const request = slug
+      ? fetch(`/api/pulse-reads/${encodeURIComponent(slug)}`, { method: "POST" })
+      : fetch("/api/pulse-reads");
+    request
+      .then((response) => response.json())
+      .then((data) => {
+        if (ignore) return;
+        if (slug && Number.isFinite(Number(data.reads))) {
+          setPulseReads((current) => ({ ...current, [slug]: Number(data.reads) }));
+          return;
+        }
+        if (data.reads && typeof data.reads === "object") setPulseReads(data.reads);
+      })
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
   }, [currentPage, pulseSlug]);
 
   useEffect(() => {
@@ -3532,7 +3556,12 @@ export default function App() {
                             className={`grid w-full gap-8 border-b border-slate-200 py-12 text-left md:items-center ${item.image ? "md:grid-cols-[minmax(0,1fr)_18rem]" : ""}`}
                           >
                             <div>
-                              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-600">{item.date}</div>
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold uppercase tracking-[0.18em] text-teal-600">
+                                <span>{item.date}</span>
+                                {pulseReads[item.slug] != null ? (
+                                  <span>{pulseReads[item.slug].toLocaleString("en-IN")} reads</span>
+                                ) : null}
+                              </div>
                               <h2 className="mt-3 text-2xl font-bold tracking-tight text-slate-900 md:text-4xl">
                                 {item.title}
                               </h2>
@@ -3579,8 +3608,15 @@ export default function App() {
                       >
                         pulseBhook
                       </button>
-                      <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-teal-300">
-                        <Newspaper className="h-3.5 w-3.5" /> {article.date}
+                      <div className="mb-4 flex flex-wrap items-center gap-3">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-teal-300">
+                          <Newspaper className="h-3.5 w-3.5" /> {article.date}
+                        </div>
+                        {pulseReads[article.slug] != null ? (
+                          <span className="text-sm text-slate-300">
+                            {pulseReads[article.slug].toLocaleString("en-IN")} reads
+                          </span>
+                        ) : null}
                       </div>
                       <h1 className="text-4xl font-bold md:text-5xl">{article.title}</h1>
                       {article.dek ? <p className="mt-6 text-lg text-slate-300">{article.dek}</p> : null}

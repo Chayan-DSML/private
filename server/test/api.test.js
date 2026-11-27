@@ -319,6 +319,20 @@ test("admin login stops password guessing", async () => {
   assert.equal(blocked.status, 429);
 });
 
+test("opening a pulse story adds one read", async () => {
+  const listedResponse = await fetch(`${base}/api/pulse-reads`);
+  assert.equal(listedResponse.status, 200);
+  const listed = await listedResponse.json();
+  assert.ok(listed.reads["beyond-bookings"] >= 400);
+  assert.ok(listed.reads["jaipur-vision"] >= 400);
+  const opened = await fetch(`${base}/api/pulse-reads/beyond-bookings`, { method: "POST" });
+  assert.equal(opened.status, 200);
+  const body = await opened.json();
+  assert.equal(body.reads, listed.reads["beyond-bookings"] + 1);
+  const missing = await fetch(`${base}/api/pulse-reads/not-a-story`, { method: "POST" });
+  assert.equal(missing.status, 404);
+});
+
 test("invalid public payloads are rejected", async () => {
   const response = await fetch(`${base}/api/waitlist`, {
     method: "POST",

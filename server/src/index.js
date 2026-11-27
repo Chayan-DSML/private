@@ -8,7 +8,7 @@ import dotenv from "dotenv";
 import express from "express";
 import multer from "multer";
 import { ensureAdmin, loginAdmin, requireAdmin } from "./auth.js";
-import { createPool, migrate, query } from "./db.js";
+import { createPool, migrate, pulseReadSlugs, query } from "./db.js";
 import { sendCeoOfficeNote } from "./ceoMail.js";
 import { deleteResume, isCloudResume, openResume, saveResume } from "./resumes.js";
 import { joinWaitlist } from "./waitlist.js";
@@ -170,6 +170,39 @@ export function createApp(pool, uploadDir) {
       }
       const joined = await joinWaitlist(pool, email, req.body?.referralCode);
       return res.status(joined.status).json(joined.body);
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.get("/api/pulse-reads", async (_req, res, next) => {
+    try {
+      const rows = await query(pool, "SELECT slug, read_count FROM pulse_reads");
+      const reads = {};
+      for (const row of rows) reads[row.slug] = Number(row.read_count) || 0;
+      res.json({ reads });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/pulse-reads/:slug", publicWrite, async (req, res, next) => {
+    try {
+      const slug = String(req.params.slug || "");
+      if (!Object.hasOwn(pulseReadSlugs(), slug)) {
+        return res.status(404).json({ error: "Story not found" });
+      }
+      await query(
+        pool,
+        "UPDATE pulse_reads SET read_count = read_count + 1 WHERE slug = ?",
+        [slug],
+      );
+      const rows = await query(
+        pool,
+        "SELECT read_count FROM pulse_reads WHERE slug = ?",
+        [slug],
+      );
+      return res.json({ slug, reads: Number(rows[0]?.read_count) || 0 });
     } catch (error) {
       return next(error);
     }

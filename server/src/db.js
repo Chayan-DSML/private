@@ -60,6 +60,25 @@ export async function migrate(pool) {
   }
   await ensureWaitlistReferrals(pool);
   await ensureSeedPayments(pool);
+  await ensurePulseReads(pool);
+}
+
+const PULSE_READ_START = {
+  "beyond-bookings": 624,
+  "jaipur-vision": 487,
+};
+
+export function pulseReadSlugs() {
+  return PULSE_READ_START;
+}
+
+async function ensurePulseReads(pool) {
+  for (const [slug, reads] of Object.entries(PULSE_READ_START)) {
+    await pool.query(
+      "INSERT IGNORE INTO pulse_reads (slug, read_count) VALUES (?, ?)",
+      [slug, reads],
+    );
+  }
 }
 
 async function ensureColumn(pool, table, column, definition) {
