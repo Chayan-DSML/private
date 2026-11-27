@@ -11,7 +11,8 @@ import { ensureAdmin, loginAdmin, requireAdmin } from "./auth.js";
 import { createPool, migrate, pulseReadSlugs, query } from "./db.js";
 import { sendCeoOfficeNote } from "./ceoMail.js";
 import { deleteResume, isCloudResume, openResume, saveResume } from "./resumes.js";
-import { joinWaitlist } from "./waitlist.js";
+import { joinWaitlist, readLocation } from "./waitlist.js";
+import { scheduleSheetSync } from "./sheetSync.js";
 import {
   createRazorpayOrder,
   verifyPaymentSignature,
@@ -23,6 +24,14 @@ const serverRoot = path.join(
 );
 dotenv.config({ path: path.join(serverRoot, ".env") });
 
+function requireLocation(body, res) {
+  const location = readLocation(body);
+  if (!location) {
+    res.status(400).json({ error: "Location access is required" });
+    return null;
+  }
+  return location;
+}
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CEO_TOPICS = new Set([
   "Product improvement",
@@ -168,7 +177,13 @@ export function createApp(pool, uploadDir) {
       if (!email || !EMAIL.test(email)) {
         return res.status(400).json({ error: "Enter a valid email address" });
       }
-      const joined = await joinWaitlist(pool, email, req.body?.referralCode);
+      const joined = await joinWaitlist(
+        pool,
+        email,
+        req.body?.referralCode,
+        readLocation(req.body),
+      );
+      scheduleSheetSync(pool);
       return res.status(joined.status).json(joined.body);
     } catch (error) {
       return next(error);
@@ -237,6 +252,8 @@ export function createApp(pool, uploadDir) {
       if (!Number.isInteger(amount) || amount < 100 || amount > 1_000_000) {
         return res.status(400).json({ error: "Choose an amount from ₹100 to ₹10,00,000" });
       }
+      const location = requireLocation(req.body, res);
+      if (!location) return;
       if (note.length > 500) {
         return res.status(400).json({ error: "Note must be 500 characters or less" });
       }
@@ -253,10 +270,11 @@ export function createApp(pool, uploadDir) {
       await query(
         pool,
         `INSERT INTO seed_pledges
-           (id, name, email, amount_inr, subscription_months, note, razorpay_order_id, status)
-         VALUES (?, ?, ?, ?, 0, ?, ?, 'pending')`,
-        [id, name, email, amount, note || null, order.orderId],
+           (id, name, email, amount_inr, subscription_months, note, razorpay_order_id, status, latitude, longitude)
+         VALUES (?, ?, ?, ?, 0, ?, ?, 'pending', ?, ?)`,
+        [id, name, email, amount, note || null, order.orderId, location.latitude, location.longitude],
       );
+      scheduleSheetSync(pool);
       return res.status(201).json({
         ok: true,
         pledgeId: id,
@@ -312,13 +330,16 @@ export function createApp(pool, uploadDir) {
       if (!name || !email || !EMAIL.test(email) || !message) {
         return res.status(400).json({ error: "Name, email, and message are required" });
       }
+      const location = requireLocation(req.body, res);
+      if (!location) return;
       const id = crypto.randomUUID();
       await query(
         pool,
-        `INSERT INTO contact_messages (id, name, email, message)
-         VALUES (?, ?, ?, ?)`,
-        [id, name, email, message],
+        `INSERT INTO contact_messages (id, name, email, message, latitude, longitude)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [id, name, email, message, location.latitude, location.longitude],
       );
+      scheduleSheetSync(pool);
       return res.status(201).json({ ok: true, id });
     } catch (error) {
       return next(error);
@@ -343,13 +364,16 @@ export function createApp(pool, uploadDir) {
       if (!message) {
         return res.status(400).json({ error: "Write your feedback or suggestion" });
       }
+      const location = requireLocation(req.body, res);
+      if (!location) return;
       const id = crypto.randomUUID();
       await query(
         pool,
-        `INSERT INTO ceo_office_messages (id, name, email, topic, message)
-         VALUES (?, ?, ?, ?, ?)`,
-        [id, name || null, email, topic || null, message],
+        `INSERT INTO ceo_office_messages (id, name, email, topic, message, latitude, longitude)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [id, name || null, email, topic || null, message, location.latitude, location.longitude],
       );
+      scheduleSheetSync(pool);
       try {
         await sendCeoOfficeNote({ id, name, email, topic, message });
         await query(
@@ -395,17 +419,20 @@ export function createApp(pool, uploadDir) {
       const fullName = text(req.body?.fullName, 200);
       const phone = text(req.body?.phone, 40);
       const experience = text(req.body?.experience, 80);
-      const location = text(req.body?.location, 200);
-      if (!fullName || !phone || !experience || !location) {
+      const city = text(req.body?.location, 200);
+      if (!fullName || !phone || !experience || !city) {
         return res.status(400).json({ error: "All partner fields are required" });
       }
+      const place = requireLocation(req.body, res);
+      if (!place) return;
       const id = crypto.randomUUID();
       await query(
         pool,
-        `INSERT INTO partner_applications (id, full_name, phone, experience, location)
-         VALUES (?, ?, ?, ?, ?)`,
-        [id, fullName, phone, experience, location],
+        `INSERT INTO partner_applications (id, full_name, phone, experience, location, latitude, longitude)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [id, fullName, phone, experience, city, place.latitude, place.longitude],
       );
+      scheduleSheetSync(pool);
       return res.status(201).json({ ok: true, id });
     } catch (error) {
       return next(error);
@@ -463,6 +490,11 @@ export function createApp(pool, uploadDir) {
             error: "Name, email, experience, resume, and a short note are required",
           });
         }
+        const place = requireLocation(req.body, res);
+        if (!place) {
+          if (req.file?.path) await fs.promises.unlink(req.file.path).catch(() => {});
+          return;
+        }
         const id = crypto.randomUUID();
         const ext = path.extname(req.file.originalname).toLowerCase();
         const storedName = resumeBucket
@@ -481,8 +513,9 @@ export function createApp(pool, uploadDir) {
             pool,
             `INSERT INTO job_applications (
                id, role_id, role_title, full_name, email, phone, linkedin_url,
-               experience, github_url, why_join, resume_filename, resume_stored_name
-             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+               experience, github_url, why_join, resume_filename, resume_stored_name,
+               latitude, longitude
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               id,
               roleId,
@@ -496,8 +529,11 @@ export function createApp(pool, uploadDir) {
               whyJoin,
               path.basename(req.file.originalname),
               storedName,
+              place.latitude,
+              place.longitude,
             ],
           );
+          scheduleSheetSync(pool);
         } catch (error) {
           if (resumeBucket) await deleteResume(resumeBucket, storedName);
           throw error;
@@ -713,6 +749,7 @@ export async function start() {
   });
   const address = server.address();
   const boundPort = typeof address === "object" && address ? address.port : port;
+  scheduleSheetSync(pool);
   return { server, pool, port: boundPort };
 }
 

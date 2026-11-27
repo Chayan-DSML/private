@@ -87,7 +87,7 @@ test("waitlist signup is stored and hidden without a JWT", async () => {
   const created = await fetch(`${base}/api/waitlist`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: "Early-Access@Example.com" }),
+    body: JSON.stringify({ email: "Early-Access@Example.com", latitude: 12.97, longitude: 77.59 }),
   });
   assert.equal(created.status, 201);
   const createdBody = await created.json();
@@ -126,10 +126,20 @@ test("referral codes are unique and counted for the referrer", async () => {
   const referrer = await fetch(`${base}/api/waitlist`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: "maverick.tourbhook@gmail.com" }),
+    body: JSON.stringify({ email: "maverick.tourbhook@gmail.com", latitude: 12.97, longitude: 77.59 }),
   });
   const referrerBody = await referrer.json();
   assert.match(referrerBody.referralCode, /^[a-z]{3}\d{3}$/);
+
+  const missingLocation = await fetch(`${base}/api/waitlist`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: "nolocation@example.com",
+      referralCode: referrerBody.referralCode,
+    }),
+  });
+  assert.equal(missingLocation.status, 400);
 
   const friend = await fetch(`${base}/api/waitlist`, {
     method: "POST",
@@ -137,6 +147,8 @@ test("referral codes are unique and counted for the referrer", async () => {
     body: JSON.stringify({
       email: "friend@example.com",
       referralCode: referrerBody.referralCode,
+      latitude: 12.9012,
+      longitude: 77.5854,
     }),
   });
   const friendBody = await friend.json();
@@ -184,7 +196,7 @@ test("seed payments reject amounts outside the range and a bad signature", async
   const created = await fetch(`${base}/api/seed-orders`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: "Ada Lovelace", email: "ada@example.com", amount: 1200, nonRefundable: true }),
+    body: JSON.stringify({ name: "Ada Lovelace", email: "ada@example.com", amount: 1200, nonRefundable: true, latitude: 12.97, longitude: 77.59 }),
   });
   assert.equal(created.status, 503);
 
@@ -219,6 +231,8 @@ test("contact, partner, and idea posts are readable by an admin", async () => {
       name: "Avery Chen",
       email: "avery@example.com",
       message: "When does the Bali guide open?",
+      latitude: 12.97,
+      longitude: 77.59,
     }),
   });
   assert.equal(contact.status, 201);
@@ -231,6 +245,8 @@ test("contact, partner, and idea posts are readable by an admin", async () => {
       phone: "+91 98765 43210",
       experience: "5+ Years",
       location: "Kochi, Kerala",
+      latitude: 12.97,
+      longitude: 77.59,
     }),
   });
   assert.equal(partner.status, 201);
@@ -265,6 +281,8 @@ test("job application stores the resume for an admin download", async () => {
   form.set("whyJoin", "I would like to help build TourBhook.");
   form.set("linkedinUrl", "https://linkedin.com/in/avery");
   form.set("githubUrl", "https://github.com/avery");
+  form.set("latitude", "12.97");
+  form.set("longitude", "77.59");
   form.set(
     "resume",
     new File(["%PDF-1.1 resume"], "avery-chen-resume.pdf", {

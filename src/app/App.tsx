@@ -349,6 +349,24 @@ function amountFromSlider(position: number) {
   return clampSeedAmount(value);
 }
 
+function requestDeviceLocation() {
+  return new Promise<{ latitude: number; longitude: number }>((resolve, reject) => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      reject(new Error("Location access is required, and this browser cannot share it."));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) =>
+        resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        }),
+      () => reject(new Error("Location access is required. Allow location to continue.")),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60_000 },
+    );
+  });
+}
+
 export default function App() {
   const initialLocation = locationState();
   const [currentPage, setCurrentPage] = useState<Page>(initialLocation.page);
@@ -365,6 +383,10 @@ export default function App() {
   const [gateEmail, setGateEmail] = useState("");
   const [gateError, setGateError] = useState("");
   const [gatePending, setGatePending] = useState(false);
+  const [gateLocation, setGateLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   const [referralOffer, setReferralOffer] = useState<{
     code: string;
     url: string;
@@ -425,10 +447,32 @@ export default function App() {
     localStorage.setItem("tourbhook-theme", dark ? "dark" : "light");
   }, [dark]);
 
+  const requestGateLocation = () => {
+    if (!navigator.geolocation) {
+      setGateError("Location access is required, and this browser cannot share it.");
+      return;
+    }
+    setGateError("");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setGateLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+        setGateError("");
+      },
+      () => {
+        setGateError("Location access is required. Allow location to open the site.");
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    );
+  };
+
   useEffect(() => {
     if (!referralGateOpen) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    requestGateLocation();
     return () => {
       document.body.style.overflow = previous;
     };
@@ -592,12 +636,18 @@ export default function App() {
       setGateError("Enter a valid email address");
       return;
     }
+    if (!gateLocation) {
+      setGateError("Location access is required. Allow location to open the site.");
+      return;
+    }
     setGateError("");
     setGatePending(true);
     try {
       const data = await postJson("/api/waitlist", {
         email,
         referralCode: incomingReferral.current,
+        latitude: gateLocation.latitude,
+        longitude: gateLocation.longitude,
       });
       setReferralOffer({
         code: data.referralCode,
@@ -621,9 +671,12 @@ export default function App() {
     setWaitlistError("");
     setWaitlistPending(true);
     try {
+      const place = gateLocation ?? (await requestDeviceLocation());
       const data = await postJson("/api/waitlist", {
         email,
         referralCode: incomingReferral.current,
+        latitude: place.latitude,
+        longitude: place.longitude,
       });
       setReferralOffer({
         code: data.referralCode,
@@ -656,12 +709,15 @@ export default function App() {
     setSeedError("");
     setSeedPending(true);
     try {
+      const place = await requestDeviceLocation();
       const order = await postJson("/api/seed-orders", {
         name,
         email,
         amount,
         note: String(data.get("note") || ""),
         nonRefundable: true,
+        latitude: place.latitude,
+        longitude: place.longitude,
       });
       const ready = await loadRazorpay();
       if (!ready || !window.Razorpay) {
@@ -717,10 +773,13 @@ export default function App() {
     setContactError("");
     setContactPending(true);
     try {
+      const place = await requestDeviceLocation();
       await postJson("/api/contact", {
         name: String(data.get("name") || ""),
         email: String(data.get("email") || ""),
         message: String(data.get("message") || ""),
+        latitude: place.latitude,
+        longitude: place.longitude,
       });
       setContactSubmitted(true);
     } catch (err) {
@@ -740,6 +799,9 @@ export default function App() {
     setApplicationError("");
     setApplicationPending(true);
     try {
+      const place = await requestDeviceLocation();
+      data.set("latitude", String(place.latitude));
+      data.set("longitude", String(place.longitude));
       await postForm("/api/applications", data);
       setApplicationSubmitted(true);
     } catch (err) {
@@ -755,11 +817,14 @@ export default function App() {
     setPartnerError("");
     setPartnerPending(true);
     try {
+      const place = await requestDeviceLocation();
       await postJson("/api/partners", {
         fullName: String(data.get("fullName") || ""),
         phone: String(data.get("phone") || ""),
         experience: String(data.get("experience") || ""),
         location: String(data.get("location") || ""),
+        latitude: place.latitude,
+        longitude: place.longitude,
       });
       setPartnerSubmitted(true);
     } catch (err) {
@@ -775,11 +840,14 @@ export default function App() {
     setCeoError("");
     setCeoPending(true);
     try {
+      const place = await requestDeviceLocation();
       await postJson("/api/ceo-feedback", {
         name: String(data.get("name") || ""),
         email: String(data.get("email") || ""),
         topic: String(data.get("topic") || ""),
         message: String(data.get("message") || ""),
+        latitude: place.latitude,
+        longitude: place.longitude,
       });
       setCeoSubmitted(true);
     } catch (err) {
@@ -4053,8 +4121,22 @@ export default function App() {
               Enter your email to view TourBhook
             </h2>
             <p className="mb-6 text-sm text-slate-500">
-              This link was shared with you. Add your email, then the site opens.
+              This link was shared with you. Allow location, add your email, then the site opens.
             </p>
+            <p className={`mb-4 text-sm ${gateLocation ? "text-teal-700" : "text-slate-600"}`}>
+              {gateLocation
+                ? "Location received."
+                : "Location access is required before you can continue."}
+            </p>
+            {!gateLocation ? (
+              <button
+                type="button"
+                onClick={requestGateLocation}
+                className="mb-4 w-full rounded-xl border border-slate-300 py-3 font-semibold text-slate-800"
+              >
+                Allow location
+              </button>
+            ) : null}
             <label className="mb-2 block text-sm font-semibold text-slate-700" htmlFor="referral-gate-email">
               Email
             </label>
@@ -4071,7 +4153,7 @@ export default function App() {
             {gateError ? <p className="mb-4 text-sm text-red-600">{gateError}</p> : null}
             <button
               type="submit"
-              disabled={gatePending}
+              disabled={gatePending || !gateLocation}
               className="w-full rounded-xl bg-slate-900 py-3 font-bold text-white transition hover:bg-slate-800 disabled:opacity-50"
             >
               {gatePending ? "Saving..." : "Submit"}

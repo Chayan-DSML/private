@@ -26,16 +26,37 @@ async function referralCount(pool, code) {
 async function findByEmail(pool, email) {
   const rows = await query(
     pool,
-    `SELECT id, email, referral_code, referred_by_code, reward_credits
+    `SELECT id, email, referral_code, referred_by_code, reward_credits, latitude, longitude
      FROM waitlist_signups WHERE email = ?`,
     [email],
   );
   return rows[0] || null;
 }
 
-export async function joinWaitlist(pool, email, rawCode) {
+export function readLocation(body) {
+  const latitude = Number(body?.latitude);
+  const longitude = Number(body?.longitude);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+  if (Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return null;
+  return {
+    latitude: Math.round(latitude * 1e6) / 1e6,
+    longitude: Math.round(longitude * 1e6) / 1e6,
+  };
+}
+
+export async function joinWaitlist(pool, email, rawCode, location = null) {
   const existing = await findByEmail(pool, email);
   if (existing) {
+    if (
+      location &&
+      (existing.latitude == null || existing.longitude == null)
+    ) {
+      await query(
+        pool,
+        "UPDATE waitlist_signups SET latitude = ?, longitude = ? WHERE id = ?",
+        [location.latitude, location.longitude, existing.id],
+      );
+    }
     return {
       status: 201,
       body: signupBody(
@@ -47,6 +68,12 @@ export async function joinWaitlist(pool, email, rawCode) {
   }
 
   const incoming = String(rawCode || "").trim().toLowerCase();
+  if (!location) {
+    return {
+      status: 400,
+      body: { error: "Location access is required" },
+    };
+  }
   let referrer = null;
   if (REFERRAL_CODE.test(incoming)) {
     const rows = await query(
@@ -64,13 +91,15 @@ export async function joinWaitlist(pool, email, rawCode) {
       await conn.beginTransaction();
       await conn.query(
         `INSERT INTO waitlist_signups
-           (id, email, referral_code, referred_by_code, reward_credits)
-         VALUES (?, ?, ?, ?, 0)`,
+           (id, email, referral_code, referred_by_code, reward_credits, latitude, longitude)
+         VALUES (?, ?, ?, ?, 0, ?, ?)`,
         [
           crypto.randomUUID(),
           email,
           code,
           referrer ? referrer.referral_code : null,
+          location ? location.latitude : null,
+          location ? location.longitude : null,
         ],
       );
       if (referrer) {

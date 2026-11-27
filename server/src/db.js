@@ -107,6 +107,18 @@ async function ensureWaitlistReferrals(pool) {
     "reward_credits",
     "INT NOT NULL DEFAULT 0",
   );
+  await ensureColumn(pool, "waitlist_signups", "latitude", "DECIMAL(9,6) NULL");
+  await ensureColumn(pool, "waitlist_signups", "longitude", "DECIMAL(9,6) NULL");
+  for (const table of [
+    "seed_pledges",
+    "contact_messages",
+    "ceo_office_messages",
+    "partner_applications",
+    "job_applications",
+  ]) {
+    await ensureColumn(pool, table, "latitude", "DECIMAL(9,6) NULL");
+    await ensureColumn(pool, table, "longitude", "DECIMAL(9,6) NULL");
+  }
 
   const [missing] = await pool.query(
     "SELECT id FROM waitlist_signups WHERE referral_code IS NULL",
