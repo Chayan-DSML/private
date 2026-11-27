@@ -10,22 +10,22 @@
 }
 
 .dark .bg-white {
-  background-color: #1c1f27;
+  background-color: #1c1f27 !important;
 }
 
 .dark .bg-white\/80,
 .dark .bg-white\/10 {
-  background-color: rgb(28 31 39 / 0.9);
+  background-color: rgb(28 31 39 / 0.9) !important;
 }
 
 .dark .bg-slate-50,
 .dark .bg-gray-50,
 .dark .bg-gray-100 {
-  background-color: #16181e;
+  background-color: #16181e !important;
 }
 
 .dark .bg-slate-100 {
-  background-color: #242833;
+  background-color: #242833 !important;
 }
 
 .dark .bg-slate-200 {
@@ -61,8 +61,58 @@
   border-color: #2c313c;
 }
 
-.dark .from-gray-50.to-white {
-  background-image: linear-gradient(#16181e, #1c1f27);
+.dark .from-slate-50,
+.dark .from-white,
+.dark .from-gray-50,
+.dark .to-white,
+.dark .to-slate-50,
+.dark .to-gray-50,
+.dark .from-teal-50,
+.dark .to-teal-50,
+.dark .from-emerald-50,
+.dark .to-emerald-50,
+.dark .from-violet-50,
+.dark .to-violet-50,
+.dark .from-purple-50,
+.dark .to-purple-50,
+.dark .from-orange-50,
+.dark .to-orange-50,
+.dark .from-amber-50,
+.dark .to-amber-50,
+.dark .from-indigo-50,
+.dark .to-indigo-50,
+.dark .from-blue-50,
+.dark .to-blue-50,
+.dark .from-rose-50,
+.dark .to-rose-50,
+.dark .from-pink-50,
+.dark .to-pink-50,
+.dark .from-cyan-50,
+.dark .to-cyan-50 {
+  background-image: none !important;
+  background-color: #1c1f27 !important;
+}
+
+.dark .bg-teal-100,
+.dark .bg-emerald-100,
+.dark .bg-violet-100,
+.dark .bg-purple-100,
+.dark .bg-orange-100,
+.dark .bg-amber-100,
+.dark .bg-indigo-100,
+.dark .bg-blue-100,
+.dark .bg-rose-100,
+.dark .bg-pink-100,
+.dark .bg-cyan-100,
+.dark .bg-indigo-50,
+.dark .bg-blue-50,
+.dark .bg-rose-50,
+.dark .bg-pink-50,
+.dark .bg-cyan-50,
+.dark .hover\:bg-slate-50:hover,
+.dark .hover\:bg-white:hover,
+.dark .hover\:bg-gray-50:hover {
+  background-color: #243038;
 }
 
 .dark .bg-teal-50,

@@ -15,6 +15,13 @@
       <link rel="canonical" href="https://www.tourbhook.com/" />
       <meta name="description" content="TourBhook is an AI travel planner by Pramahar Technologies. It builds custom itineraries and helps travelers discover places with less planning time." />
       <style>html, body { height: 100%; margin: 0; } #root { height: 100%; }</style>
+      <script>
+        try {
+          if (localStorage.getItem("tourbhook-theme") === "dark") {
+            document.documentElement.classList.add("dark");
+          }
+        } catch (e) {}
+      </script>
       
     </head>
 
