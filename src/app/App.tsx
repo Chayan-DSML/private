@@ -8,7 +8,9 @@ import {
   Shield,
   Mail,
   Instagram,
+  Linkedin,
   Twitter,
+  Youtube,
   X,
   CheckCircle,
   MapPin,
@@ -3815,12 +3817,31 @@ export default function App() {
                 Revolutionizing travel with AI-driven
                 efficiency.
               </p>
+              <p className="mt-6 text-sm font-semibold tracking-wide text-slate-900">
+                PRAMAHAR TECHNOLOGIES PRIVATE LIMITED
+              </p>
+              <p className="mt-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Registered office
+              </p>
+              <address className="mt-2 text-sm not-italic leading-relaxed text-slate-500">
+                No. 13-14, 1st Floor,
+                <br />
+                SV Complex, Navodaya Nagar,
+                <br />
+                Kothanur Main Road,
+                <br />
+                J.P. Nagar 7th Phase,
+                <br />
+                Bangalore - 560078
+              </address>
+              <p className="mt-3 text-sm text-slate-500">CIN Number: U52291KA2026PTC226806</p>
+              <p className="text-sm text-slate-500">GST Number: 29AARCP4534A1ZB</p>
             </div>
             <div>
               <h4 className="mb-4 font-bold text-slate-900">
                 Company
               </h4>
-              <ul className="space-y-2 text-sm text-slate-500">
+              <ul className="grid grid-flow-col grid-rows-4 gap-x-8 gap-y-2 text-left text-sm text-slate-500">
                 <li>
                   <button
                     onClick={() => navigateTo("about")}
@@ -3901,10 +3922,22 @@ export default function App() {
                   <Instagram className="h-4 w-4" />
                 </a>
                 <a
-                  href="#"
+                  href="https://www.youtube.com/channel/UCBzIPyW9ZMjDisnH4DmcaCA"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="TourBhook on YouTube"
                   className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 transition-colors hover:bg-teal-600 hover:text-white"
                 >
-                  <Twitter className="h-4 w-4" />
+                  <Youtube className="h-4 w-4" />
+                </a>
+                <a
+                  href="https://www.linkedin.com/company/pramahar/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Pramahar on LinkedIn"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 transition-colors hover:bg-teal-600 hover:text-white"
+                >
+                  <Linkedin className="h-4 w-4" />
                 </a>
               </div>
             </div>
