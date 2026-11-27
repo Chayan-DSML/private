@@ -601,15 +601,12 @@ export default function App() {
           >
             <img
               src={logoLight}
-              alt="Tour Bhook"
+              alt="TourBhook"
               className="h-12 w-auto"
             />
             <div className="flex flex-col">
               <span className="text-2xl font-bold tracking-tight text-slate-900 text-left">
-                Tour{" "}
-                <span className="bg-gradient-to-r from-teal-600 to-teal-500 bg-clip-text text-transparent">
-                  Bhook
-                </span>
+                Tour<span className="bg-gradient-to-r from-teal-600 to-teal-500 bg-clip-text text-transparent">Bhook</span>
               </span>
               <span className="text-[10px] text-slate-500 -mt-1">
                 A Pramahar Technologies Product
@@ -721,20 +718,20 @@ export default function App() {
           <div className="animate-in fade-in duration-500">
             {/* Hero Section */}
             <div className="mx-auto mb-12 max-w-7xl px-4 pt-4 md:mb-20 md:px-8 md:pt-6">
-              <div className="relative overflow-hidden rounded-3xl shadow-2xl md:h-[700px] md:rounded-[2.5rem]">
+              <div className="relative overflow-hidden rounded-3xl shadow-2xl md:min-h-[640px] md:rounded-[2.5rem]">
                 <img
                   src="https://images.unsplash.com/photo-1537996194471-e657df975ab4?q=80&w=2838&auto=format&fit=crop"
                   alt="Bali Temple"
                   className="absolute inset-0 h-full w-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/55 to-black/75 md:bg-gradient-to-r md:from-black/70 md:via-black/40 md:to-transparent"></div>
-                <div className="relative flex flex-col justify-center px-5 py-8 text-white sm:px-8 md:absolute md:inset-0 md:max-w-3xl md:px-16 md:py-0">
+                <div className="relative flex min-h-[520px] flex-col justify-center px-8 py-12 text-white sm:px-12 sm:py-16 md:min-h-[640px] md:max-w-3xl md:px-20 md:py-20">
                   <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider backdrop-blur-md">
                     <Sparkles className="h-3 w-3 text-teal-300" />{" "}
                     AI-Optimized Travel
                   </div>
-                  <h1 className="mb-4 text-3xl font-bold leading-tight sm:text-4xl md:mb-6 md:text-7xl">
-                    Tour Bhook: The Smart Way to{" "}
+                  <h1 className="mb-4 text-3xl font-bold leading-tight sm:text-4xl md:mb-6 md:text-6xl">
+                    TourBhook: The Smart Way to{" "}
                     <span className="bg-gradient-to-r from-teal-300 to-emerald-300 bg-clip-text text-transparent">
                       Explore the World
                     </span>
@@ -834,7 +831,7 @@ export default function App() {
             {/* Stats */}
             <div className="mx-auto mb-24 max-w-4xl px-6 text-center">
               <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-teal-600">
-                The Tour Bhook Promise
+                The TourBhook Promise
               </div>
               <h2 className="mb-12 text-4xl font-bold text-slate-900 md:text-5xl">
                 Travel Smarter, Not Harder
@@ -874,7 +871,7 @@ export default function App() {
                   Simple Process
                 </div>
                 <h2 className="text-4xl font-bold text-slate-900 md:text-5xl">
-                  How Tour Bhook Works
+                  How TourBhook Works
                 </h2>
                 <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-500">
                   From planning to exploring in just a few taps
@@ -1175,7 +1172,7 @@ export default function App() {
                   Frequently Asked Questions
                 </h2>
                 <p className="text-lg text-slate-500">
-                  Everything you need to know about Tour Bhook
+                  Everything you need to know about TourBhook
                 </p>
                 <button
                   onClick={() => navigateTo("faqs")}
@@ -1188,12 +1185,12 @@ export default function App() {
               <div className="space-y-4">
                 {[
                   {
-                    question: "Is Tour Bhook free to use?",
+                    question: "Is TourBhook free to use?",
                     answer:
-                      "Tour Bhook will offer both free and premium tiers. The free version includes basic route optimization and destination guides. Premium features include advanced AI planning and priority support. We'll announce pricing details closer to launch.",
+                      "TourBhook will offer both free and premium tiers. The free version includes basic route optimization and destination guides. Premium features include advanced AI planning and priority support. We'll announce pricing details closer to launch.",
                   },
                   {
-                    question: "When will Tour Bhook launch?",
+                    question: "When will TourBhook launch?",
                     answer:
                       "We're currently in closed beta and working hard to perfect the experience. Waitlist members will get early access starting Q3 2026. Join the waitlist to be first in line when we launch!",
                   },
@@ -1209,7 +1206,7 @@ export default function App() {
                       "Our AI analyzes millions of data points including travel times, opening hours, crowd patterns, and user preferences to create the most efficient route. We factor in real-time traffic, weather, and seasonal trends to save you hours of travel time.",
                   },
                   {
-                    question: "Can I use Tour Bhook offline?",
+                    question: "Can I use TourBhook offline?",
                     answer:
                       "TourBhook uses live spatial feeds and community data so routes stay current. Offline map downloads are not part of the product. The FAQ page explains what the routing engine does instead.",
                   },
@@ -1274,10 +1271,10 @@ export default function App() {
                   const testimonials = [
                     { quote: "I've been waiting for something like this. Planning Bali took me three weeks last time. I genuinely can't wait for this to launch.", name: "Ayesha R.", location: "Mumbai", avatar: "AR", color: "bg-teal-100 text-teal-700" },
                     { quote: "The idea of one app that actually works offline is what sold me. I've been burned too many times by no signal at the wrong moment.", name: "Karan M.", location: "Bangalore", avatar: "KM", color: "bg-violet-100 text-violet-700" },
-                    { quote: "Group travel is a nightmare to organise. If Tour Bhook can fix that, I'm signing up everyone I know.", name: "Priya S.", location: "Delhi", avatar: "PS", color: "bg-amber-100 text-amber-700" },
+                    { quote: "Group travel is a nightmare to organise. If TourBhook can fix that, I'm signing up everyone I know.", name: "Priya S.", location: "Delhi", avatar: "PS", color: "bg-amber-100 text-amber-700" },
                     { quote: "Every travel app I've used feels like it was built for someone else. This one actually gets how Indians travel.", name: "Rohan V.", location: "Pune", avatar: "RV", color: "bg-rose-100 text-rose-700" },
                     { quote: "The AI itinerary idea alone is worth it. I spend more time planning than actually travelling. Please launch fast.", name: "Sneha T.", location: "Chennai", avatar: "ST", color: "bg-teal-100 text-teal-700" },
-                    { quote: "Went to Vietnam last year and the chaos of figuring out buses and timings was exhausting. Tour Bhook sounds like the answer.", name: "Arjun N.", location: "Hyderabad", avatar: "AN", color: "bg-indigo-100 text-indigo-700" },
+                    { quote: "Went to Vietnam last year and the chaos of figuring out buses and timings was exhausting. TourBhook sounds like the answer.", name: "Arjun N.", location: "Hyderabad", avatar: "AN", color: "bg-indigo-100 text-indigo-700" },
                     { quote: "I travel solo and safety information is always hard to find. If the app covers that too, I'm a lifetime user.", name: "Meera K.", location: "Ahmedabad", avatar: "MK", color: "bg-emerald-100 text-emerald-700" },
                     { quote: "My friends and I can never agree on anything when planning. A voting feature for stops would literally save friendships.", name: "Dev P.", location: "Kolkata", avatar: "DP", color: "bg-orange-100 text-orange-700" },
                     { quote: "The local food discovery feature is what got me. Every travel app just recommends the same tourist traps.", name: "Nisha B.", location: "Jaipur", avatar: "NB", color: "bg-pink-100 text-pink-700" },
@@ -1349,7 +1346,7 @@ export default function App() {
                           <p className="mb-3 text-xs text-teal-800">You joined with code {referralOffer.referredByCode}.</p>
                         ) : null}
                         <div className="flex gap-2">
-                          <a href={`https://wa.me/?text=${encodeURIComponent(`I just joined the Tour Bhook waitlist. Join with my link: ${referralOffer?.url}`)}`} target="_blank" rel="noopener noreferrer" className="flex-1 rounded-xl bg-green-500 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-green-600">WhatsApp</a>
+                          <a href={`https://wa.me/?text=${encodeURIComponent(`I just joined the TourBhook waitlist. Join with my link: ${referralOffer?.url}`)}`} target="_blank" rel="noopener noreferrer" className="flex-1 rounded-xl bg-green-500 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-green-600">WhatsApp</a>
                           <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Just joined the @TourBhook waitlist. Join with my link: ${referralOffer?.url}`)}`} target="_blank" rel="noopener noreferrer" className="flex-1 rounded-xl bg-slate-900 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-slate-700">Twitter / X</a>
                         </div>
                       </div>
@@ -1504,7 +1501,7 @@ export default function App() {
                   <Building2 className="h-3.5 w-3.5" /> Our Story
                 </div>
                 <h1 className="mb-6 text-5xl font-bold md:text-6xl">We got lost so you don't have to.</h1>
-                <p className="text-lg text-slate-300">Tour Bhook started from a personal frustration — too many tabs, too many apps, and a holiday that felt like a project plan.</p>
+                <p className="text-lg text-slate-300">TourBhook started from a personal frustration — too many tabs, too many apps, and a holiday that felt like a project plan.</p>
               </div>
             </div>
 
@@ -1515,7 +1512,7 @@ export default function App() {
                   <div className="mb-3 text-xs font-bold uppercase tracking-widest text-teal-600">The Problem We Lived</div>
                   <h2 className="mb-5 text-3xl font-bold text-slate-900">Planning a trip shouldn't be a full-time job.</h2>
                   <p className="mb-4 leading-relaxed text-slate-600">We were a group of engineers and product designers at Pramahar Technologies who loved to travel. Every trip meant the same routine — hours on Google, WhatsApp groups full of links no one could agree on, screenshots scattered across five different apps, and a 40-tab browser that would crash right before you needed it most.</p>
-                  <p className="leading-relaxed text-slate-600">We built Tour Bhook because we couldn't find the tool we wanted. One app. One itinerary. AI that actually understands how you travel.</p>
+                  <p className="leading-relaxed text-slate-600">We built TourBhook because we couldn't find the tool we wanted. One app. One itinerary. AI that actually understands how you travel.</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   {[
@@ -1537,7 +1534,7 @@ export default function App() {
               <div className="mb-20 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm md:p-12">
                 <div className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-400">The Company Behind It</div>
                 <h2 className="mb-4 text-2xl font-bold text-slate-900">Pramahar Technologies</h2>
-                <p className="mb-6 leading-relaxed text-slate-600">Pramahar Technologies is the product studio that builds Tour Bhook. We are a small, remote-first team distributed across India, united by a belief that technology should make lived experiences better — not replace them. Tour Bhook is our first consumer product, and we are building it in public with our community every step of the way.</p>
+                <p className="mb-6 leading-relaxed text-slate-600">Pramahar Technologies is the product studio that builds TourBhook. We are a small, remote-first team distributed across India, united by a belief that technology should make lived experiences better — not replace them. TourBhook is our first consumer product, and we are building it in public with our community every step of the way.</p>
                 <div className="flex flex-wrap gap-6 border-t border-slate-100 pt-6 text-sm text-slate-500">
                   <span><strong className="text-slate-900">Founded</strong> — 2026</span>
                   <span><strong className="text-slate-900">HQ</strong> — India</span>
@@ -1757,7 +1754,7 @@ export default function App() {
                     <p className="leading-relaxed text-slate-500">
                       Since we are fully remote and do not have
                       any meetings, we do a lot of offsites.
-                      Tour Bhook has an offsite every 4 months,
+                      TourBhook has an offsite every 4 months,
                       for 4–5 days. We travel to amazing places,
                       stay at fancy resorts, eat and drink
                       awesome, and have a lot of conversations.
@@ -1973,7 +1970,7 @@ export default function App() {
                     {
                       icon: "📊",
                       title: "Quarterly Bonus",
-                      body: "10% of Tour Bhook's profits every quarter form the bonus pool for the team, distributed based on quality and timeliness. Partners can opt into a performance bonus structure of their choice.",
+                      body: "10% of TourBhook's profits every quarter form the bonus pool for the team, distributed based on quality and timeliness. Partners can opt into a performance bonus structure of their choice.",
                     },
                     {
                       icon: "🔓",
@@ -2649,7 +2646,7 @@ export default function App() {
 
                         <div className="mb-8">
                           <label className="mb-2 block text-sm font-semibold text-slate-700">
-                            Why do you want to join Tour Bhook?
+                            Why do you want to join TourBhook?
                             *
                           </label>
                           <textarea
@@ -3120,7 +3117,7 @@ export default function App() {
                   <Newspaper className="h-3.5 w-3.5" /> Press &amp; Media
                 </div>
                 <h1 className="mb-4 text-5xl font-bold text-slate-900 md:text-6xl">Media Kit</h1>
-                <p className="text-lg text-slate-500">Everything you need to cover Tour Bhook. For press enquiries, email us directly.</p>
+                <p className="text-lg text-slate-500">Everything you need to cover TourBhook. For press enquiries, email us directly.</p>
                 <EmailOfficeButton
                   label="Email us"
                   className="mt-6 inline-flex items-center gap-2 rounded-full border border-slate-200 px-5 py-2 text-sm font-medium text-slate-700 transition hover:border-teal-300 hover:text-teal-600"
@@ -3133,10 +3130,10 @@ export default function App() {
               <div className="mb-16 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm md:p-10">
                 <h2 className="mb-4 text-2xl font-bold text-slate-900">Company Boilerplate</h2>
                 <p className="mb-4 leading-relaxed text-slate-600">
-                  Tour Bhook is an AI-powered travel planning app developed by Pramahar Technologies. The app uses intelligent route optimisation and community-verified recommendations to help travellers spend less time planning and more time exploring. Tour Bhook is currently in pre-launch with over 8,200 early adopters on its waitlist, and is set to launch in Southeast Asia with full coverage of Bali, Thailand, Vietnam, and Singapore.
+                  TourBhook is an AI-powered travel planning app developed by Pramahar Technologies. The app uses intelligent route optimisation and community-verified recommendations to help travellers spend less time planning and more time exploring. TourBhook is currently in pre-launch with over 8,200 early adopters on its waitlist, and is set to launch in Southeast Asia with full coverage of Bali, Thailand, Vietnam, and Singapore.
                 </p>
                 <button
-                  onClick={() => { navigator.clipboard.writeText("Tour Bhook is an AI-powered travel planning app developed by Pramahar Technologies. The app uses intelligent route optimisation and community-verified recommendations to help travellers spend less time planning and more time exploring. Tour Bhook is currently in pre-launch with over 8,200 early adopters on its waitlist, and is set to launch in Southeast Asia with full coverage of Bali, Thailand, Vietnam, and Singapore."); }}
+                  onClick={() => { navigator.clipboard.writeText("TourBhook is an AI-powered travel planning app developed by Pramahar Technologies. The app uses intelligent route optimisation and community-verified recommendations to help travellers spend less time planning and more time exploring. TourBhook is currently in pre-launch with over 8,200 early adopters on its waitlist, and is set to launch in Southeast Asia with full coverage of Bali, Thailand, Vietnam, and Singapore."); }}
                   className="flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-teal-300 hover:text-teal-600"
                 >
                   <Copy className="h-4 w-4" /> Copy boilerplate
@@ -3169,7 +3166,7 @@ export default function App() {
                 <div className="space-y-4">
                   {[
                     { title: "Verify before you publish", body: "Please reach out to us before going to print. We're happy to confirm facts, provide quotes, or clarify anything that seems ambiguous. This keeps coverage accurate for your readers." },
-                    { title: "Keep the brands separate", body: "Tour Bhook and Pramahar Technologies are distinct brands. Tour Bhook is the consumer product; Pramahar Technologies is the parent company. Please do not conflate the two in headlines or body copy." },
+                    { title: "Keep the brands separate", body: "TourBhook and Pramahar Technologies are distinct brands. TourBhook is the consumer product; Pramahar Technologies is the parent company. Please do not conflate the two in headlines or body copy." },
                     { title: "No unreleased feature screenshots", body: "We share early builds with media under embargo from time to time. Please do not publish screenshots of unreleased features or flows without prior written approval from our team." },
                   ].map((g, i) => (
                     <div key={i} className="rounded-2xl border border-slate-100 bg-slate-50 p-6">
@@ -3559,12 +3556,11 @@ export default function App() {
               >
                 <img
                   src={logoLight}
-                  alt="Tour Bhook"
+                  alt="TourBhook"
                   className="h-10 w-auto"
                 />
                 <span className="text-xl font-bold tracking-tight text-slate-900">
-                  Tour{" "}
-                  <span className="text-teal-600">Bhook</span>
+                  Tour<span className="text-teal-600">Bhook</span>
                 </span>
               </button>
               <p className="text-sm text-slate-500">
@@ -3666,7 +3662,7 @@ export default function App() {
             </div>
           </div>
           <div className="flex flex-col items-center justify-between gap-4 border-t border-slate-200 pt-8 text-sm font-normal leading-none text-slate-500 md:flex-row">
-            <p className="m-0">© 2026 Tour Bhook Inc.</p>
+            <p className="m-0">© 2026 TourBhook Inc.</p>
             <div className="flex items-center gap-6">
               <button
                 type="button"
@@ -3720,12 +3716,12 @@ export default function App() {
               <div className="space-y-5 text-sm text-slate-600 leading-relaxed">
                 <p className="text-slate-400 text-xs">Last updated: September 2026</p>
                 {[
-                  { title: "1. Acceptance of Terms", body: "By accessing or using Tour Bhook (\"the App\"), operated by Pramahar Technologies, you agree to be bound by these Terms and Conditions. If you do not agree, please do not use the App." },
-                  { title: "2. Use of the Service", body: "Tour Bhook provides AI-assisted travel planning and itinerary management. The App is currently in pre-launch phase. Features displayed may change before the official release. You may not use the service for any unlawful purpose or in a way that could damage, disable, or impair the service." },
-                  { title: "3. Waitlist & Early Access", body: "By joining the waitlist, you agree to receive email communications from Tour Bhook regarding product updates and launch announcements. You may unsubscribe at any time. Waitlist position is not guaranteed and may change." },
-                  { title: "4. Intellectual Property", body: "All content, branding, and technology within Tour Bhook — including the TB logo, product name, and AI systems — are the intellectual property of Pramahar Technologies. You may not reproduce, distribute, or create derivative works without prior written permission." },
+                  { title: "1. Acceptance of Terms", body: "By accessing or using TourBhook (\"the App\"), operated by Pramahar Technologies, you agree to be bound by these Terms and Conditions. If you do not agree, please do not use the App." },
+                  { title: "2. Use of the Service", body: "TourBhook provides AI-assisted travel planning and itinerary management. The App is currently in pre-launch phase. Features displayed may change before the official release. You may not use the service for any unlawful purpose or in a way that could damage, disable, or impair the service." },
+                  { title: "3. Waitlist & Early Access", body: "By joining the waitlist, you agree to receive email communications from TourBhook regarding product updates and launch announcements. You may unsubscribe at any time. Waitlist position is not guaranteed and may change." },
+                  { title: "4. Intellectual Property", body: "All content, branding, and technology within TourBhook — including the TB logo, product name, and AI systems — are the intellectual property of Pramahar Technologies. You may not reproduce, distribute, or create derivative works without prior written permission." },
                   { title: "5. Third-Party Services", body: "The App may integrate with third-party services including mapping providers, booking platforms, and AI APIs. We are not responsible for the availability, accuracy, or content of third-party services." },
-                  { title: "6. Limitation of Liability", body: "Tour Bhook and Pramahar Technologies shall not be liable for any indirect, incidental, or consequential damages arising from your use of the App, including travel disruptions, booking errors, or reliance on AI-generated itineraries." },
+                  { title: "6. Limitation of Liability", body: "TourBhook and Pramahar Technologies shall not be liable for any indirect, incidental, or consequential damages arising from your use of the App, including travel disruptions, booking errors, or reliance on AI-generated itineraries." },
                   { title: "7. Changes to Terms", body: "We reserve the right to modify these Terms at any time. Continued use of the App after changes are posted constitutes your acceptance of the revised Terms." },
                   { title: "8. Contact", body: "For any questions about these Terms, use the button below. It opens the mail app on this device." },
                 ].map((section, i) => (
