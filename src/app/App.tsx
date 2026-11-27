@@ -153,7 +153,7 @@ const PULSE_ARTICLES: PulseArticle[] = [
     slug: "beyond-bookings",
     date: "27 November 2026",
     title:
-      "Beyond Bookings: How TourBhook Is Building A Budget-First TravelTech Ecosystem For Indian Travellers",
+      "How TourBhook Is Building A Budget-First TravelTech Ecosystem For Indian Travellers",
     dek: "The emerging travel-tech startup aims to integrate personalised itineraries, budget-oriented planning, genuine reviews and community-led travel discovery.",
     sections: [
       {
@@ -233,7 +233,7 @@ const PULSE_ARTICLES: PulseArticle[] = [
   {
     slug: "jaipur-vision",
     date: "November 2026",
-    title: "From a ₹5,000 Jaipur Trip to TourBhook: A Founder’s Vision for Simpler Budget Travel",
+    title: "A Founder’s Vision for Simpler Budget Travel",
     image: "/pulse/chayan-agarwal.jpg",
     imageAlt: "Chayan Agarwal standing in front of the TourBhook sign",
     sections: [
