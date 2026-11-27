@@ -32,8 +32,8 @@ function legalPagePaths() {
           pathname === "/faqs/" ||
           pathname === "/pulsebhook" ||
           pathname === "/pulsebhook/" ||
-          pathname === "/storybhook" ||
-          pathname === "/storybhook/"
+          pathname === "/seedbhook" ||
+          pathname === "/seedbhook/"
         ) {
           req.url = `/index.html${suffix}`;
         }

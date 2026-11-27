@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import mysql from "mysql2/promise";
+import { randomReferralCode } from "./codes.js";
 
 const schemaPath = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -55,6 +56,61 @@ export async function migrate(pool) {
   if (columns.length === 0) {
     await pool.query(
       "ALTER TABLE ceo_office_messages ADD COLUMN notified_at TIMESTAMP(3) NULL",
+    );
+  }
+  await ensureWaitlistReferrals(pool);
+}
+
+async function ensureColumn(pool, table, column, definition) {
+  const [columns] = await pool.query(
+    `SHOW COLUMNS FROM \`${table}\` LIKE ?`,
+    [column],
+  );
+  if (columns.length === 0) {
+    await pool.query(
+      `ALTER TABLE \`${table}\` ADD COLUMN ${column} ${definition}`,
+    );
+  }
+}
+
+async function ensureWaitlistReferrals(pool) {
+  await ensureColumn(pool, "waitlist_signups", "referral_code", "VARCHAR(12) NULL");
+  await ensureColumn(
+    pool,
+    "waitlist_signups",
+    "referred_by_code",
+    "VARCHAR(12) NULL",
+  );
+  await ensureColumn(
+    pool,
+    "waitlist_signups",
+    "reward_credits",
+    "INT NOT NULL DEFAULT 0",
+  );
+
+  const [missing] = await pool.query(
+    "SELECT id FROM waitlist_signups WHERE referral_code IS NULL",
+  );
+  for (const row of missing) {
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      try {
+        await pool.query(
+          "UPDATE waitlist_signups SET referral_code = ? WHERE id = ? AND referral_code IS NULL",
+          [randomReferralCode(), row.id],
+        );
+        break;
+      } catch (error) {
+        if (error?.code !== "ER_DUP_ENTRY") throw error;
+      }
+    }
+  }
+
+  const [indexes] = await pool.query(
+    "SHOW INDEX FROM waitlist_signups WHERE Key_name = 'waitlist_referral_code'",
+  );
+  if (indexes.length === 0) {
+    await pool.query(
+      "ALTER TABLE waitlist_signups ADD UNIQUE KEY waitlist_referral_code (referral_code)",
     );
   }
 }

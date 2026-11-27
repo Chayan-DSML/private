@@ -28,7 +28,7 @@ import {
   Rocket,
   Newspaper,
   ExternalLink,
-  BookOpen,
+  Gift,
 } from "lucide-react";
 import { postForm, postJson } from "./api";
 
@@ -44,7 +44,7 @@ type Page =
   | "ceo"
   | "faqs"
   | "pulse"
-  | "story";
+  | "seed";
 
 const OFFICE_MAILTO = "mailto:info@tourbhook.com";
 
@@ -90,7 +90,7 @@ const JOBS: Job[] = [];
 const PATH_PAGES: Partial<Record<Page, string>> = {
   faqs: "/faqs",
   pulse: "/pulsebhook",
-  story: "/storybhook",
+  seed: "/seedbhook",
 };
 
 const QUERY_PAGES: Page[] = [
@@ -139,7 +139,7 @@ const PULSE_POSTS = [
     title: "TourBhook is listed on Google Play",
     excerpt:
       "The Android app is available to download. The iOS app is still on the way.",
-    body: "This is a sample news item. Use pulseBhook for store launches, version notes, and anything a journalist or a waitlist member should hear from the company rather than from a travel guide.",
+    body: "This is a sample news item. Store launches and version notes belong on pulseBhook, next to the travel guides.",
   },
   {
     slug: "how-to-cover-us",
@@ -150,42 +150,103 @@ const PULSE_POSTS = [
       "TourBhook plans the day after a trip is booked. It is not a flight or hotel checkout.",
     body: "This is a sample media note. TourBhook builds route-aware itineraries: walking clusters, transit time, and opening hours. Booking sites still sell the tickets. Please keep TourBhook and Pramahar Technologies as separate names in headlines.",
   },
-];
-
-const STORY_POSTS = [
   {
     slug: "ubud-without-backtracking",
+    kind: "Guide",
+    date: "18 November 2026",
     place: "Ubud, Bali",
     days: "1 day",
     title: "A walking day in Ubud that stays in one valley",
     excerpt:
       "Rice terraces, a courtyard cafe, and a temple, in an order that does not cross town twice.",
-    body: "This is a sample guide. Morning starts at the terrace path while it is still cool. Late morning is a cafe inside that same walking cluster, not a restaurant back toward the main road. The temple visit sits before the return, so the day ends where the car is parked. Real stories can replace this with a full hour-by-hour itinerary.",
+    body: "This is a sample guide. Morning starts at the terrace path while it is still cool. Late morning is a cafe inside that same walking cluster, not a restaurant back toward the main road. The temple visit sits before the return, so the day ends where the car is parked.",
   },
   {
     slug: "bangkok-one-neighbourhood",
+    kind: "Itinerary",
+    date: "2 November 2026",
     place: "Bangkok",
     days: "1 afternoon",
     title: "One Bangkok neighbourhood, not five districts",
     excerpt:
       "A short afternoon built from places you can reach on foot between showers.",
-    body: "This is a sample itinerary. The plan stays inside one neighbourhood: a gallery, a shaded lane of shops, and dinner within a ten-minute walk. It is the kind of story storyBhook is for, once the real guides are ready.",
+    body: "This is a sample itinerary. The plan stays inside one neighbourhood: a gallery, a shaded lane of shops, and dinner within a ten-minute walk.",
   },
   {
     slug: "singapore-three-clusters",
+    kind: "Guide",
+    date: "21 October 2026",
     place: "Singapore",
     days: "2 days",
     title: "Singapore in three walking clusters",
     excerpt:
       "Two days split by neighbourhood, with a cafe break written into each cluster.",
-    body: "This is a sample two-day guide. Day one is the civic district and the river, with the break chosen inside that walk. Day two moves to a different cluster instead of zig-zagging back. Swap this text for a published itinerary when you have one.",
+    body: "This is a sample two-day guide. Day one is the civic district and the river, with the break chosen inside that walk. Day two moves to a different cluster instead of zig-zagging back.",
   },
 ];
+
+const SEED_MIN = 100;
+const SEED_MAX = 1_000_000;
+const RUPEES_PER_MONTH = 100;
+const SEED_EXAMPLES = [100, 1_200, 12_000, 1_00_000, 10_00_000];
+
+function formatInr(amount: number) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+function subscriptionFor(amount: number) {
+  const months = Math.floor(amount / RUPEES_PER_MONTH);
+  const years = Math.floor(months / 12);
+  const remainder = months % 12;
+  const parts: string[] = [];
+  if (years) parts.push(`${years} year${years === 1 ? "" : "s"}`);
+  if (remainder) parts.push(`${remainder} month${remainder === 1 ? "" : "s"}`);
+  return { months, label: parts.join(" and ") || "0 months" };
+}
+
+function clampSeedAmount(value: number) {
+  if (!Number.isFinite(value)) return SEED_MIN;
+  const stepped = Math.round(value / 100) * 100;
+  return Math.min(SEED_MAX, Math.max(SEED_MIN, stepped));
+}
+
+function sliderFromAmount(amount: number) {
+  const min = Math.log(SEED_MIN);
+  const max = Math.log(SEED_MAX);
+  const clamped = Math.min(SEED_MAX, Math.max(SEED_MIN, amount));
+  return Math.round(((Math.log(clamped) - min) / (max - min)) * 1000);
+}
+
+function amountFromSlider(position: number) {
+  const min = Math.log(SEED_MIN);
+  const max = Math.log(SEED_MAX);
+  const value = Math.exp(min + (position / 1000) * (max - min));
+  return clampSeedAmount(value);
+}
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>(pageFromLocation);
   const [pulseSlug, setPulseSlug] = useState<string | null>(null);
-  const [storySlug, setStorySlug] = useState<string | null>(null);
+  const incomingReferral = useRef(
+    typeof window === "undefined"
+      ? ""
+      : (new URLSearchParams(window.location.search).get("ref") || "").trim().toLowerCase(),
+  );
+  const [referralOffer, setReferralOffer] = useState<{
+    code: string;
+    url: string;
+    count: number;
+    referredByCode: string | null;
+  } | null>(null);
+  const [seedAmount, setSeedAmount] = useState(1200);
+  const [seedAmountInput, setSeedAmountInput] = useState("1200");
+  const [seedSubmitted, setSeedSubmitted] = useState(false);
+  const [seedError, setSeedError] = useState("");
+  const [seedPending, setSeedPending] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [waitlistSubmitted, setWaitlistSubmitted] =
     useState(false);
@@ -243,7 +304,6 @@ export default function App() {
     sectionTarget.current = section ?? null;
     setMobileMenuOpen(false);
     if (page === "pulse") setPulseSlug(null);
-    if (page === "story") setStorySlug(null);
     const nextUrl = pathForPage(page, section);
     const here = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     if (here !== nextUrl) window.history.pushState({}, "", nextUrl);
@@ -282,7 +342,6 @@ export default function App() {
       const page = pageFromLocation();
       setCurrentPage(page);
       if (page !== "pulse") setPulseSlug(null);
-      if (page !== "story") setStorySlug(null);
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
@@ -292,7 +351,7 @@ export default function App() {
     const titles: Partial<Record<Page, string>> = {
       faqs: "FAQs | TourBhook by PRAMAHAR",
       pulse: "pulseBhook | TourBhook by PRAMAHAR",
-      story: "storyBhook | TourBhook by PRAMAHAR",
+      seed: "seedBhook | TourBhook by PRAMAHAR",
     };
     document.title = titles[currentPage] ?? "TourBhook by PRAMAHAR";
     const link = document.querySelector('link[rel="canonical"]');
@@ -331,12 +390,49 @@ export default function App() {
     setWaitlistError("");
     setWaitlistPending(true);
     try {
-      await postJson("/api/waitlist", { email });
+      const data = await postJson("/api/waitlist", {
+        email,
+        referralCode: incomingReferral.current,
+      });
+      setReferralOffer({
+        code: data.referralCode,
+        url: data.referralUrl,
+        count: Number(data.referralCount) || 0,
+        referredByCode: data.referredByCode || null,
+      });
       setWaitlistSubmitted(true);
     } catch (err) {
       setWaitlistError(err instanceof Error ? err.message : "Could not join the waitlist");
     } finally {
       setWaitlistPending(false);
+    }
+  };
+
+  const applySeedAmount = (value: number) => {
+    const next = clampSeedAmount(value);
+    setSeedAmount(next);
+    setSeedAmountInput(String(next));
+    return next;
+  };
+
+  const handleSeedSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    const amount = applySeedAmount(Number(seedAmountInput));
+    setSeedError("");
+    setSeedPending(true);
+    try {
+      await postJson("/api/seed-pledges", {
+        name: String(data.get("name") || ""),
+        email: String(data.get("email") || ""),
+        amount,
+        note: String(data.get("note") || ""),
+      });
+      setSeedSubmitted(true);
+    } catch (err) {
+      setSeedError(err instanceof Error ? err.message : "Could not save that pledge");
+    } finally {
+      setSeedPending(false);
     }
   };
 
@@ -476,10 +572,10 @@ export default function App() {
               pulseBhook
             </button>
             <button
-              onClick={() => navigateTo("story")}
-              className={`transition-colors hover:text-slate-900 ${currentPage === "story" ? "font-semibold text-slate-900" : ""}`}
+              onClick={() => navigateTo("seed")}
+              className={`transition-colors hover:text-slate-900 ${currentPage === "seed" ? "font-semibold text-slate-900" : ""}`}
             >
-              storyBhook
+              seedBhook
             </button>
             <button
               onClick={() => navigateTo("crewbhook")}
@@ -526,10 +622,10 @@ export default function App() {
                 pulseBhook
               </button>
               <button
-                onClick={() => navigateTo("story")}
-                className={`text-left font-medium ${currentPage === "story" ? "text-teal-600" : "text-slate-600"}`}
+                onClick={() => navigateTo("seed")}
+                className={`text-left font-medium ${currentPage === "seed" ? "text-teal-600" : "text-slate-600"}`}
               >
-                storyBhook
+                seedBhook
               </button>
               <button
                 onClick={() => navigateTo("home", "services")}
@@ -1174,19 +1270,28 @@ export default function App() {
                       <p className="mb-1 text-2xl font-bold text-slate-900">You're on the list!</p>
                       <p className="mb-8 text-slate-500">We'll reach out as soon as we launch. Share with friends to move up the queue.</p>
                       <div className="mx-auto max-w-md rounded-2xl border border-teal-100 bg-teal-50 p-6 text-left">
-                        <p className="mb-3 text-sm font-semibold text-teal-800">📣 Share with friends → move up the waitlist</p>
+                        <p className="mb-3 text-sm font-semibold text-teal-800">Your referral link</p>
                         <div className="mb-3 flex items-center gap-2 rounded-xl border border-teal-200 bg-white px-4 py-2.5 text-sm text-slate-600">
-                          <span className="flex-1 truncate">www.tourbhook.com/?ref=early</span>
+                          <span className="flex-1 truncate">{referralOffer?.url.replace("https://", "")}</span>
                           <button
-                            onClick={() => { navigator.clipboard.writeText("https://www.tourbhook.com/?ref=early"); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000); }}
+                            onClick={() => { navigator.clipboard.writeText(referralOffer?.url || ""); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000); }}
                             className="flex items-center gap-1.5 rounded-lg bg-teal-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-teal-700"
                           >
                             {referralCopied ? <><Check className="h-3 w-3" /> Copied!</> : <><Copy className="h-3 w-3" /> Copy</>}
                           </button>
                         </div>
+                        <p className="mb-3 text-sm text-slate-600">
+                          Code <span className="font-semibold text-slate-900">{referralOffer?.code}</span>
+                          {" · "}
+                          {referralOffer?.count === 1 ? "1 person has" : `${referralOffer?.count ?? 0} people have`} signed up with it.
+                          Each signup is stored for rewards in the TourBhook app.
+                        </p>
+                        {referralOffer?.referredByCode ? (
+                          <p className="mb-3 text-xs text-teal-800">You joined with code {referralOffer.referredByCode}.</p>
+                        ) : null}
                         <div className="flex gap-2">
-                          <a href={`https://wa.me/?text=${encodeURIComponent("I just joined the Tour Bhook waitlist — the AI travel planner that saves hours of planning. Join here: https://www.tourbhook.com/?ref=early")}`} target="_blank" rel="noopener noreferrer" className="flex-1 rounded-xl bg-green-500 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-green-600">WhatsApp</a>
-                          <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Just joined the @TourBhook waitlist — AI-powered travel planning that actually makes sense 🌍 Join here: https://www.tourbhook.com/?ref=early")}`} target="_blank" rel="noopener noreferrer" className="flex-1 rounded-xl bg-slate-900 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-slate-700">Twitter / X</a>
+                          <a href={`https://wa.me/?text=${encodeURIComponent(`I just joined the Tour Bhook waitlist. Join with my link: ${referralOffer?.url}`)}`} target="_blank" rel="noopener noreferrer" className="flex-1 rounded-xl bg-green-500 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-green-600">WhatsApp</a>
+                          <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Just joined the @TourBhook waitlist. Join with my link: ${referralOffer?.url}`)}`} target="_blank" rel="noopener noreferrer" className="flex-1 rounded-xl bg-slate-900 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-slate-700">Twitter / X</a>
                         </div>
                       </div>
                     </div>
@@ -1213,6 +1318,9 @@ export default function App() {
                       </div>
                       {waitlistError ? (
                         <p className="text-sm text-red-600">{waitlistError}</p>
+                      ) : null}
+                      {incomingReferral.current ? (
+                        <p className="text-sm text-teal-700">Joining with referral code {incomingReferral.current}.</p>
                       ) : null}
                     </form>
                   )}
@@ -3220,9 +3328,9 @@ export default function App() {
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-teal-300">
                   <Newspaper className="h-3.5 w-3.5" /> pulseBhook
                 </div>
-                <h1 className="mb-4 text-4xl font-bold md:text-6xl">News, launches, and media</h1>
+                <h1 className="mb-4 text-4xl font-bold md:text-6xl">News, guides, and launches</h1>
                 <p className="text-lg text-slate-300">
-                  Official notes from TourBhook and Pramahar Technologies. The posts below are samples until the real announcements are ready.
+                  Company news, media notes, and travel guides live here. The posts below are samples until the real copy is ready.
                 </p>
               </div>
             </div>
@@ -3242,9 +3350,19 @@ export default function App() {
                           }}
                           className="block w-full rounded-3xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:border-teal-200"
                         >
-                          <div className="mb-3 flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                          <div className="mb-3 flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
                             <span className="rounded-full bg-teal-50 px-2.5 py-1 text-teal-700">{item.kind}</span>
                             <span>{item.date}</span>
+                            {"place" in item && item.place ? (
+                              <span className="inline-flex items-center gap-1">
+                                <MapPin className="h-3.5 w-3.5" /> {item.place}
+                              </span>
+                            ) : null}
+                            {"days" in item && item.days ? (
+                              <span className="inline-flex items-center gap-1">
+                                <Clock className="h-3.5 w-3.5" /> {item.days}
+                              </span>
+                            ) : null}
                             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-500">Sample</span>
                           </div>
                           <h2 className="mb-2 text-2xl font-bold text-slate-900">{item.title}</h2>
@@ -3277,79 +3395,115 @@ export default function App() {
           </div>
         )}
 
-        {currentPage === "story" && (
+        {currentPage === "seed" && (
           <div className="animate-in fade-in duration-500">
             <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900 px-6 py-20 text-white">
               <div className="mx-auto max-w-3xl text-center">
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-teal-300">
-                  <BookOpen className="h-3.5 w-3.5" /> storyBhook
+                  <Gift className="h-3.5 w-3.5" /> seedBhook
                 </div>
-                <h1 className="mb-4 text-4xl font-bold md:text-6xl">Travel blogs, guides, and itineraries</h1>
+                <h1 className="mb-4 text-4xl font-bold md:text-6xl">Back TourBhook. Get the app for the same value.</h1>
                 <p className="text-lg text-slate-300">
-                  Stories about how a day should be ordered. These three are samples you can replace with real guides.
+                  Reward-based crowdfunding. You give from {formatInr(SEED_MIN)} to {formatInr(SEED_MAX)}. Every {formatInr(RUPEES_PER_MONTH)} becomes one month of TourBhook, credited to your email in the app.
                 </p>
               </div>
             </div>
-            <div className="mx-auto max-w-3xl px-6 py-16">
-              {(() => {
-                const story = STORY_POSTS.find((item) => item.slug === storySlug);
-                if (!story) {
-                  return (
-                    <div className="space-y-4">
-                      {STORY_POSTS.map((item) => (
-                        <button
-                          key={item.slug}
-                          type="button"
-                          onClick={() => {
-                            setStorySlug(item.slug);
-                            window.scrollTo({ top: 0, behavior: "smooth" });
-                          }}
-                          className="block w-full rounded-3xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:border-teal-200"
-                        >
-                          <div className="mb-3 flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                            <span className="inline-flex items-center gap-1 text-teal-700">
-                              <MapPin className="h-3.5 w-3.5" /> {item.place}
-                            </span>
-                            <span className="inline-flex items-center gap-1">
-                              <Clock className="h-3.5 w-3.5" /> {item.days}
-                            </span>
-                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-500">Sample</span>
-                          </div>
-                          <h2 className="mb-2 text-2xl font-bold text-slate-900">{item.title}</h2>
-                          <p className="text-slate-500">{item.excerpt}</p>
-                        </button>
-                      ))}
+            <div className="mx-auto grid max-w-6xl gap-8 px-6 py-16 lg:grid-cols-[1.1fr_0.9fr]">
+              <div>
+                <div className="mb-8 grid gap-4 sm:grid-cols-3">
+                  {[
+                    ["1", "Choose an amount", "Anywhere from ₹100 to ₹10,00,000, in steps of ₹100."],
+                    ["2", "Back the product", "This is a perk, not a share of the company."],
+                    ["3", "Receive the subscription", "The months are stored for that email and applied in the app."],
+                  ].map(([step, title, body]) => (
+                    <div key={step} className="rounded-2xl border border-slate-200 bg-white p-5">
+                      <div className="mb-2 text-xs font-bold uppercase tracking-widest text-teal-600">Step {step}</div>
+                      <h2 className="mb-2 font-bold text-slate-900">{title}</h2>
+                      <p className="text-sm text-slate-500">{body}</p>
                     </div>
-                  );
-                }
-                return (
-                  <article className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-                    <button
-                      type="button"
-                      onClick={() => setStorySlug(null)}
-                      className="mb-6 text-sm font-semibold text-teal-700 hover:text-teal-800"
-                    >
-                      All storyBhook guides
+                  ))}
+                </div>
+                <h2 className="mb-4 text-2xl font-bold text-slate-900">What each amount is worth</h2>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {SEED_EXAMPLES.map((amount) => {
+                    const perk = subscriptionFor(amount);
+                    return (
+                      <button
+                        key={amount}
+                        type="button"
+                        onClick={() => applySeedAmount(amount)}
+                        className={`rounded-2xl border p-4 text-left transition ${seedAmount === amount ? "border-teal-500 bg-teal-50" : "border-slate-200 bg-white hover:border-teal-200"}`}
+                      >
+                        <div className="text-lg font-bold text-slate-900">{formatInr(amount)}</div>
+                        <div className="text-sm text-slate-500">{perk.label} of TourBhook</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="h-fit rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-24">
+                {seedSubmitted ? (
+                  <div className="py-8 text-center">
+                    <CheckCircle className="mx-auto mb-4 h-12 w-12 text-teal-500" />
+                    <h2 className="mb-2 text-2xl font-bold text-slate-900">Pledge reserved</h2>
+                    <p className="text-slate-500">
+                      {formatInr(seedAmount)} is {subscriptionFor(seedAmount).label} of TourBhook. That credit is stored for your email and applied in the app. We confirm payment with you before anything is charged.
+                    </p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSeedSubmit} className="space-y-5">
+                    <div>
+                      <div className="mb-1 text-sm font-semibold text-slate-500">Your pledge</div>
+                      <div className="text-4xl font-bold text-slate-900">{formatInr(seedAmount)}</div>
+                      <p className="mt-1 text-teal-700">{subscriptionFor(seedAmount).label} of the TourBhook app</p>
+                    </div>
+                    <label className="block text-sm font-semibold text-slate-700">
+                      Amount
+                      <input
+                        type="range"
+                        min={0}
+                        max={1000}
+                        step={1}
+                        value={sliderFromAmount(seedAmount)}
+                        onChange={(e) => applySeedAmount(amountFromSlider(Number(e.target.value)))}
+                        className="mt-3 w-full accent-teal-600"
+                      />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={seedAmountInput}
+                        onChange={(e) => setSeedAmountInput(e.target.value.replace(/[^\d]/g, ""))}
+                        onBlur={() => applySeedAmount(Number(seedAmountInput))}
+                        className="mt-3 w-full rounded-xl border border-slate-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </label>
+                    <label className="block text-sm font-semibold text-slate-700">
+                      Name
+                      <input name="name" required maxLength={200} placeholder="Your name" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-normal focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                    </label>
+                    <label className="block text-sm font-semibold text-slate-700">
+                      Email for the subscription
+                      <input name="email" type="email" required maxLength={320} placeholder="you@email.com" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-normal focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                    </label>
+                    <label className="block text-sm font-semibold text-slate-700">
+                      Note <span className="font-normal text-slate-400">(optional)</span>
+                      <textarea name="note" rows={3} maxLength={500} placeholder="Anything you want us to know" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-normal focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                    </label>
+                    {seedError ? <p className="text-sm text-red-600">{seedError}</p> : null}
+                    <button type="submit" disabled={seedPending} className="w-full rounded-xl bg-slate-900 py-3 font-bold text-white transition hover:bg-slate-800 disabled:opacity-50">
+                      {seedPending ? "Saving..." : `Reserve ${formatInr(seedAmount)}`}
                     </button>
-                    <div className="mb-3 flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                      <span className="inline-flex items-center gap-1 text-teal-700">
-                        <MapPin className="h-3.5 w-3.5" /> {story.place}
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <Clock className="h-3.5 w-3.5" /> {story.days}
-                      </span>
-                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-500">Sample</span>
-                    </div>
-                    <h2 className="mb-4 text-3xl font-bold text-slate-900">{story.title}</h2>
-                    <p className="leading-relaxed text-slate-600">{story.body}</p>
-                  </article>
-                );
-              })()}
+                    <p className="text-xs leading-relaxed text-slate-500">
+                      seedBhook does not sell shares. Backers receive TourBhook subscription time equal to the pledge. ₹100 is one month.
+                    </p>
+                  </form>
+                )}
+              </div>
             </div>
           </div>
         )}
 
-        {!["home","about","crewbhook","careers","partner","job-detail","roadmap","press","ceo","faqs","pulse","story"].includes(currentPage) && (
+        {!["home","about","crewbhook","careers","partner","job-detail","roadmap","press","ceo","faqs","pulse","seed"].includes(currentPage) && (
           <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center animate-in fade-in duration-500">
             <div className="mb-6 text-7xl">🗺️</div>
             <h1 className="mb-3 text-4xl font-bold text-slate-900">Page not found</h1>
@@ -3411,10 +3565,10 @@ export default function App() {
                 </li>
                 <li>
                   <button
-                    onClick={() => navigateTo("story")}
+                    onClick={() => navigateTo("seed")}
                     className="hover:text-teal-600"
                   >
-                    storyBhook
+                    seedBhook
                   </button>
                 </li>
                 <li>

@@ -35,7 +35,9 @@ async function login() {
 
 async function clearLeads() {
   for (const table of [
+    "waitlist_referrals",
     "waitlist_signups",
+    "seed_pledges",
     "contact_messages",
     "job_applications",
     "partner_applications",
@@ -69,7 +71,12 @@ test("waitlist signup is stored and hidden without a JWT", async () => {
     body: JSON.stringify({ email: "Early-Access@Example.com" }),
   });
   assert.equal(created.status, 201);
-  assert.deepEqual(await created.json(), { ok: true, alreadyJoined: false });
+  const createdBody = await created.json();
+  assert.equal(createdBody.ok, true);
+  assert.equal(createdBody.alreadyJoined, false);
+  assert.match(createdBody.referralCode, /^[a-z]{3}\d{3}$/);
+  assert.equal(createdBody.referralUrl, `https://www.tourbhook.com/?ref=${createdBody.referralCode}`);
+  assert.equal(createdBody.referralCount, 0);
 
   const again = await fetch(`${base}/api/waitlist`, {
     method: "POST",
@@ -77,7 +84,9 @@ test("waitlist signup is stored and hidden without a JWT", async () => {
     body: JSON.stringify({ email: "early-access@example.com" }),
   });
   assert.equal(again.status, 201);
-  assert.equal((await again.json()).alreadyJoined, true);
+  const againBody = await again.json();
+  assert.equal(againBody.alreadyJoined, true);
+  assert.equal(againBody.referralCode, createdBody.referralCode);
 
   const locked = await fetch(`${base}/api/admin/waitlist`);
   assert.equal(locked.status, 401);
@@ -90,6 +99,88 @@ test("waitlist signup is stored and hidden without a JWT", async () => {
   const body = await opened.json();
   assert.equal(body.items.length, 1);
   assert.equal(body.items[0].email, "early-access@example.com");
+  assert.equal(body.items[0].referral_code, createdBody.referralCode);
+  assert.equal(Number(body.items[0].referral_count), 0);
+});
+
+test("referral codes are unique and counted for the referrer", async () => {
+  const referrer = await fetch(`${base}/api/waitlist`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "maverick.tourbhook@gmail.com" }),
+  });
+  const referrerBody = await referrer.json();
+  assert.match(referrerBody.referralCode, /^[a-z]{3}\d{3}$/);
+
+  const friend = await fetch(`${base}/api/waitlist`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: "friend@example.com",
+      referralCode: referrerBody.referralCode,
+    }),
+  });
+  const friendBody = await friend.json();
+  assert.equal(friend.status, 201);
+  assert.equal(friendBody.referredByCode, referrerBody.referralCode);
+  assert.notEqual(friendBody.referralCode, referrerBody.referralCode);
+
+  const repeat = await fetch(`${base}/api/waitlist`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: "friend@example.com",
+      referralCode: referrerBody.referralCode,
+    }),
+  });
+  const repeatBody = await repeat.json();
+  assert.equal(repeatBody.alreadyJoined, true);
+  assert.equal(repeatBody.referralCode, friendBody.referralCode);
+
+  const token = await login();
+  const opened = await fetch(`${base}/api/admin/waitlist`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const items = (await opened.json()).items;
+  const row = items.find((item) => item.email === "maverick.tourbhook@gmail.com");
+  assert.equal(Number(row.referral_count), 1);
+  assert.equal(Number(row.reward_credits), 1);
+});
+
+test("seed pledges store subscription months and reject amounts outside the range", async () => {
+  const low = await fetch(`${base}/api/seed-pledges`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: "Ada", email: "ada@example.com", amount: 50 }),
+  });
+  assert.equal(low.status, 400);
+
+  const high = await fetch(`${base}/api/seed-pledges`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: "Ada", email: "ada@example.com", amount: 1000001 }),
+  });
+  assert.equal(high.status, 400);
+
+  const created = await fetch(`${base}/api/seed-pledges`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: "Ada Lovelace", email: "ada@example.com", amount: 1200 }),
+  });
+  assert.equal(created.status, 201);
+  assert.equal((await created.json()).subscriptionMonths, 12);
+
+  const token = await login();
+  const opened = await fetch(`${base}/api/admin/seed-pledges`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const items = (await opened.json()).items;
+  assert.equal(items[0].email, "ada@example.com");
+  assert.equal(Number(items[0].amount_inr), 1200);
+  assert.equal(Number(items[0].subscription_months), 12);
+
+  const locked = await fetch(`${base}/api/admin/seed-pledges`);
+  assert.equal(locked.status, 401);
 });
 
 test("contact, partner, and idea posts are readable by an admin", async () => {

@@ -11,6 +11,7 @@ import { ensureAdmin, loginAdmin, requireAdmin } from "./auth.js";
 import { createPool, migrate, query } from "./db.js";
 import { sendCeoOfficeNote } from "./ceoMail.js";
 import { deleteResume, isCloudResume, openResume, saveResume } from "./resumes.js";
+import { joinWaitlist } from "./waitlist.js";
 
 const serverRoot = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -125,14 +126,41 @@ export function createApp(pool, uploadDir) {
       if (!email || !EMAIL.test(email)) {
         return res.status(400).json({ error: "Enter a valid email address" });
       }
-      const inserted = await query(
+      const joined = await joinWaitlist(pool, email, req.body?.referralCode);
+      return res.status(joined.status).json(joined.body);
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.post("/api/seed-pledges", publicWrite, async (req, res, next) => {
+    try {
+      const name = text(req.body?.name, 200);
+      const email = text(req.body?.email, 320)?.toLowerCase();
+      const amount = Number(req.body?.amount);
+      const note = String(req.body?.note ?? "").trim();
+      if (!name || !email || !EMAIL.test(email)) {
+        return res.status(400).json({ error: "Name and a valid email are required" });
+      }
+      if (!Number.isInteger(amount) || amount < 100 || amount > 1_000_000) {
+        return res.status(400).json({ error: "Choose an amount from ₹100 to ₹10,00,000" });
+      }
+      if (note.length > 500) {
+        return res.status(400).json({ error: "Note must be 500 characters or less" });
+      }
+      const months = Math.floor(amount / 100);
+      const id = crypto.randomUUID();
+      await query(
         pool,
-        "INSERT IGNORE INTO waitlist_signups (id, email) VALUES (?, ?)",
-        [crypto.randomUUID(), email],
+        `INSERT INTO seed_pledges (id, name, email, amount_inr, subscription_months, note)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [id, name, email, amount, months, note || null],
       );
       return res.status(201).json({
         ok: true,
-        alreadyJoined: inserted.affectedRows === 0,
+        id,
+        amount,
+        subscriptionMonths: months,
       });
     } catch (error) {
       return next(error);
@@ -361,7 +389,25 @@ export function createApp(pool, uploadDir) {
     try {
       const items = await query(
         pool,
-        "SELECT id, email, created_at FROM waitlist_signups ORDER BY created_at DESC",
+        `SELECT s.id, s.email, s.referral_code, s.referred_by_code, s.reward_credits,
+                s.created_at,
+                (SELECT COUNT(*) FROM waitlist_signups c
+                  WHERE c.referred_by_code = s.referral_code) AS referral_count
+         FROM waitlist_signups s
+         ORDER BY s.created_at DESC`,
+      );
+      res.json({ items });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/admin/seed-pledges", requireAdmin, async (_req, res, next) => {
+    try {
+      const items = await query(
+        pool,
+        `SELECT id, name, email, amount_inr, subscription_months, note, created_at
+         FROM seed_pledges ORDER BY created_at DESC`,
       );
       res.json({ items });
     } catch (error) {
@@ -482,7 +528,7 @@ export function createApp(pool, uploadDir) {
     ["/delete-account", "/delete-account/"],
     sendLegalPage("delete-account/index.html"),
   );
-  app.get(["/faqs", "/faqs/", "/pulsebhook", "/pulsebhook/", "/storybhook", "/storybhook/"], (req, res, next) => {
+  app.get(["/faqs", "/faqs/", "/pulsebhook", "/pulsebhook/", "/seedbhook", "/seedbhook/"], (req, res, next) => {
     const home = path.join(distDir, "index.html");
     if (!fs.existsSync(home)) return next();
     res.setHeader("Cache-Control", "public, max-age=0");
