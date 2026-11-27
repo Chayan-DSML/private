@@ -58,6 +58,43 @@ function rateLimit(max, windowMs) {
   };
 }
 
+const loginFailures = new Map();
+
+function recordLoginFailure(keys) {
+  const now = Date.now();
+  for (const key of keys) {
+    const recent = loginFailures.get(key) || [];
+    recent.push(now);
+    loginFailures.set(key, recent);
+  }
+}
+
+function adminLoginLimit(maxFailures, windowMs) {
+  return (req, res, next) => {
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    const keys = [`ip:${req.ip}`];
+    if (email) keys.push(`email:${email}`);
+    const now = Date.now();
+    for (const key of keys) {
+      const recent = (loginFailures.get(key) || []).filter(
+        (time) => now - time < windowMs,
+      );
+      loginFailures.set(key, recent);
+      if (recent.length >= maxFailures) {
+        return res
+          .status(429)
+          .json({ error: "Too many sign-in attempts. Try again later." });
+      }
+    }
+    const send = res.json.bind(res);
+    res.json = (body) => {
+      if (res.statusCode === 401) recordLoginFailure(keys);
+      return send(body);
+    };
+    return next();
+  };
+}
+
 const RESUME_TYPES = {
   ".pdf": "application/pdf",
   ".doc": "application/msword",
@@ -109,7 +146,8 @@ export function createApp(pool, uploadDir) {
   });
   app.use(express.json({ limit: "100kb" }));
 
-  const publicWrite = rateLimit(30, 60_000);
+  const publicWrite = rateLimit(8, 10 * 60_000);
+  const adminLogin = adminLoginLimit(5, 15 * 60_000);
 
   app.get("/api/health", async (_req, res, next) => {
     try {
@@ -373,7 +411,7 @@ export function createApp(pool, uploadDir) {
     },
   );
 
-  app.post("/api/admin/login", async (req, res, next) => {
+  app.post("/api/admin/login", adminLogin, async (req, res, next) => {
     try {
       const session = await loginAdmin(pool, req.body?.email, req.body?.password);
       if (!session) {

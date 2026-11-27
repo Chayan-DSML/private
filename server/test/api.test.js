@@ -268,6 +268,29 @@ test("job application stores the resume for an admin download", async () => {
   assert.equal(missing.status, 401);
 });
 
+test("admin login stops password guessing", async () => {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const response = await fetch(`${base}/api/admin/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: process.env.ADMIN_EMAIL,
+        password: `wrong-${attempt}`,
+      }),
+    });
+    assert.equal(response.status, 401);
+  }
+  const blocked = await fetch(`${base}/api/admin/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: process.env.ADMIN_EMAIL,
+      password: "still-wrong",
+    }),
+  });
+  assert.equal(blocked.status, 429);
+});
+
 test("invalid public payloads are rejected", async () => {
   const response = await fetch(`${base}/api/waitlist`, {
     method: "POST",
