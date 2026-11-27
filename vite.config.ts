@@ -31,7 +31,7 @@ function legalPagePaths() {
           pathname === "/faqs" ||
           pathname === "/faqs/" ||
           pathname === "/pulsebhook" ||
-          pathname === "/pulsebhook/" ||
+          pathname.startsWith("/pulsebhook/") ||
           pathname === "/seedbhook" ||
           pathname === "/seedbhook/"
         ) {

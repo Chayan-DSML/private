@@ -106,14 +106,23 @@ const QUERY_PAGES: Page[] = [
 ];
 
 function pageFromLocation(): Page {
-  if (typeof window === "undefined") return "home";
+  return locationState().page;
+}
+
+function locationState(): { page: Page; pulseSlug: string | null } {
+  if (typeof window === "undefined") return { page: "home", pulseSlug: null };
   const path = window.location.pathname.replace(/\/$/, "") || "/";
+  if (path === "/pulsebhook" || path.startsWith("/pulsebhook/")) {
+    const raw = path === "/pulsebhook" ? "" : path.slice("/pulsebhook/".length);
+    return { page: "pulse", pulseSlug: raw ? decodeURIComponent(raw) : null };
+  }
   const fromPath = (Object.entries(PATH_PAGES) as [Page, string][]).find(
     ([, pathname]) => pathname === path,
   );
-  if (fromPath) return fromPath[0];
+  if (fromPath) return { page: fromPath[0], pulseSlug: null };
   const requested = new URLSearchParams(window.location.search).get("page");
-  return QUERY_PAGES.includes(requested as Page) ? (requested as Page) : "home";
+  const page = QUERY_PAGES.includes(requested as Page) ? (requested as Page) : "home";
+  return { page, pulseSlug: null };
 }
 
 function pathForPage(page: Page, section?: string) {
@@ -123,13 +132,111 @@ function pathForPage(page: Page, section?: string) {
   return section ? `/?page=${page}#${section}` : `/?page=${page}`;
 }
 
-const PULSE_ARTICLE = {
-  kind: "Editorial",
-  date: "November 2026",
-  title: "From a ₹5,000 Jaipur Trip to TourBhook: A Founder’s Vision for Simpler Budget Travel",
-  image: "/pulse/chayan-agarwal.jpg",
-  imageAlt: "Chayan Agarwal standing in front of the TourBhook sign",
-  sections: [
+type PulseSection = {
+  heading: string;
+  paragraphs: string[];
+  website?: { label: string; href: string };
+};
+
+type PulseArticle = {
+  slug: string;
+  date: string;
+  title: string;
+  dek?: string;
+  image?: string;
+  imageAlt?: string;
+  sections: PulseSection[];
+};
+
+const PULSE_ARTICLES: PulseArticle[] = [
+  {
+    slug: "beyond-bookings",
+    date: "27 November 2026",
+    title:
+      "Beyond Bookings: How TourBhook Is Building A Budget-First TravelTech Ecosystem For Indian Travellers",
+    dek: "The emerging travel-tech startup aims to integrate personalised itineraries, budget-oriented planning, genuine reviews and community-led travel discovery.",
+    sections: [
+      {
+        heading: "",
+        paragraphs: [
+          "India's travel-tech industry has transformed how consumers book flights, accommodation and holiday packages. However, the process of deciding where to travel, understanding the actual cost of a journey and identifying reliable recommendations continues to present challenges.",
+          "For many travellers, planning a single trip involves switching between booking platforms, mapping services, social media, travel blogs and online communities.",
+          "TourBhook, an emerging Indian travel-tech startup founded by Chayan Agarwal, is looking to address this fragmentation by developing a travel ecosystem centred around individual preferences, affordability and trustworthy information.",
+        ],
+      },
+      {
+        heading: "Solving The Decision-Making Gap In Travel",
+        paragraphs: [
+          "While online travel platforms have simplified transactions, travellers still need to make several decisions before reaching the booking stage.",
+          "Which destination fits their budget? How much should they allocate towards accommodation and transportation? Which attractions are worth visiting? Are online recommendations based on genuine experiences or paid promotions?",
+          "These questions become particularly important for students, solo travellers, young professionals and budget-conscious families.",
+          "TourBhook's approach is to bring these considerations into a more connected travel-planning experience, reducing the dependence on scattered information.",
+        ],
+      },
+      {
+        heading: "Building A Budget-First Planning Experience",
+        paragraphs: [
+          "One of TourBhook's central product propositions is budget-oriented personalisation.",
+          "Instead of beginning exclusively with destinations, accommodation options or travel packages, the platform aims to incorporate a traveller's available budget into the planning process itself.",
+          "The intended experience considers several components of a journey, including transportation, accommodation, food, attractions and local experiences.",
+          "By connecting these considerations with individual preferences, TourBhook aims to help users develop more practical itineraries and make informed decisions before committing to travel expenses.",
+          "The objective is not simply to recommend cheaper alternatives, but to help travellers understand how different choices affect their overall journey.",
+        ],
+      },
+      {
+        heading: "Connecting Travel Planning With Social Discovery",
+        paragraphs: [
+          "Another component of TourBhook's product strategy is SocialBhook, a travel-focused discovery and community experience.",
+          "SocialBhook is designed around travel content, destination discovery and opportunities for travellers to connect through travel groups.",
+          "The concept is particularly relevant to solo travellers who may be interested in discovering new destinations, learning from other people's experiences or connecting with like-minded individuals.",
+          "By bringing social discovery closer to the planning experience, TourBhook intends to reduce the disconnect between travel inspiration and practical execution.",
+          "Rather than treating travel content solely as entertainment, the startup sees it as a potential starting point for informed travel decisions.",
+        ],
+      },
+      {
+        heading: "Addressing The Trust Deficit In Travel Reviews",
+        paragraphs: [
+          "The increasing volume of promotional travel content has made it more difficult for consumers to distinguish genuine recommendations from commercial endorsements.",
+          "TourBhook aims to build a review ecosystem that encourages travellers to share authentic experiences and practical information about the places they visit.",
+          "The longer-term challenge will involve developing effective moderation, transparent review policies and mechanisms that discourage misleading content.",
+          "For the startup, trust is intended to become a core product principle rather than an isolated feature.",
+        ],
+      },
+      {
+        heading: "From A Personal Experience To A TravelTech Product",
+        paragraphs: [
+          "The idea behind TourBhook originated in February 2025, when Agarwal travelled to Jaipur for a week with a budget of ₹5,000.",
+          "By using public transportation and affordable dormitory accommodation, he reportedly spent approximately ₹300–₹400 on local transportation and around ₹1,500 on accommodation.",
+          "The experience highlighted the possibility of affordable travel, but also revealed how difficult it could be to access reliable information about expenses, transportation and local experiences.",
+          "This became the starting point for developing a product focused on practical travel planning.",
+        ],
+      },
+      {
+        heading: "Product Development And The Road Ahead",
+        paragraphs: [
+          "Developed under Pramahar, TourBhook is currently in the early stages of its product journey.",
+          "The startup's roadmap focuses on bringing together multiple aspects of travel through a connected digital experience, including personalised planning, destination discovery, community interaction and trustworthy recommendations.",
+          "As the platform evolves, its ability to deliver accurate travel information, demonstrate measurable user value and maintain the credibility of community-generated content will be important factors in establishing its competitive position.",
+          "The broader opportunity for TourBhook lies in transforming fragmented travel research into a more accessible and structured planning experience.",
+          "In an increasingly competitive travel-tech market, the startup's success will ultimately depend on whether its budget-first approach translates into better decisions and tangible outcomes for travellers.",
+        ],
+      },
+      {
+        heading: "About TourBhook",
+        paragraphs: [
+          "TourBhook is an emerging Indian travel-tech platform focused on personalised travel planning, budget accessibility, destination discovery and community-driven travel information.",
+        ],
+        website: { label: "www.tourbhook.com", href: "https://www.tourbhook.com" },
+      },
+    ],
+  },
+  {
+    slug: "jaipur-vision",
+    date: "November 2026",
+    title: "From a ₹5,000 Jaipur Trip to TourBhook: A Founder’s Vision for Simpler Budget Travel",
+    image: "/pulse/chayan-agarwal.jpg",
+    imageAlt: "Chayan Agarwal standing in front of the TourBhook sign",
+    sections: [
     {
       heading: "A trip that sparked an idea",
       paragraphs: [
@@ -177,7 +284,8 @@ const PULSE_ARTICLE = {
       ],
     },
   ],
-};
+  },
+];
 
 const SEED_MIN = 100;
 const SEED_MAX = 1_000_000;
@@ -234,7 +342,9 @@ function amountFromSlider(position: number) {
 }
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<Page>(pageFromLocation);
+  const initialLocation = locationState();
+  const [currentPage, setCurrentPage] = useState<Page>(initialLocation.page);
+  const [pulseSlug, setPulseSlug] = useState<string | null>(initialLocation.pulseSlug);
   const incomingReferral = useRef(
     typeof window === "undefined"
       ? ""
@@ -312,7 +422,8 @@ export default function App() {
     const nextUrl = pathForPage(page, section);
     const here = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     if (here !== nextUrl) window.history.pushState({}, "", nextUrl);
-    if (page === currentPage) {
+    setPulseSlug(null);
+    if (page === currentPage && !pulseSlug) {
       if (section) {
         document.getElementById(section)?.scrollIntoView({
           behavior: "smooth",
@@ -325,6 +436,17 @@ export default function App() {
       return;
     }
     setCurrentPage(page);
+  };
+
+  const openPulse = (slug?: string) => {
+    sectionTarget.current = null;
+    setMobileMenuOpen(false);
+    const nextUrl = slug ? `/pulsebhook/${encodeURIComponent(slug)}` : "/pulsebhook";
+    const here = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (here !== nextUrl) window.history.pushState({}, "", nextUrl);
+    setPulseSlug(slug ?? null);
+    setCurrentPage("pulse");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   useEffect(() => {
@@ -340,7 +462,7 @@ export default function App() {
       return () => cancelAnimationFrame(frame);
     }
     window.scrollTo(0, 0);
-  }, [currentPage]);
+  }, [currentPage, pulseSlug]);
 
   useEffect(() => {
     if (currentPage !== "seed") return;
@@ -358,28 +480,32 @@ export default function App() {
 
   useEffect(() => {
     const onPop = () => {
-      const page = pageFromLocation();
-      setCurrentPage(page);
+      const next = locationState();
+      setCurrentPage(next.page);
+      setPulseSlug(next.pulseSlug);
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
   useEffect(() => {
+    const pulseArticle = PULSE_ARTICLES.find((article) => article.slug === pulseSlug);
     const titles: Partial<Record<Page, string>> = {
       faqs: "FAQs | TourBhook by PRAMAHAR",
-      pulse: "pulseBhook | TourBhook by PRAMAHAR",
+      pulse: pulseArticle
+        ? `${pulseArticle.title} | pulseBhook`
+        : "pulseBhook | TourBhook by PRAMAHAR",
       seed: "seedBhook | TourBhook by PRAMAHAR",
     };
     document.title = titles[currentPage] ?? "TourBhook by PRAMAHAR";
     const link = document.querySelector('link[rel="canonical"]');
     if (link) {
-      link.setAttribute(
-        "href",
-        `https://www.tourbhook.com${PATH_PAGES[currentPage] ?? "/"}`,
-      );
+      const path = pulseArticle
+        ? `/pulsebhook/${pulseArticle.slug}`
+        : (PATH_PAGES[currentPage] ?? "/");
+      link.setAttribute("href", `https://www.tourbhook.com${path}`);
     }
-  }, [currentPage]);
+  }, [currentPage, pulseSlug]);
 
   // Animate waitlist counter on mount
   useEffect(() => {
@@ -3379,31 +3505,110 @@ export default function App() {
         {/* 404 Fallback */}
         {currentPage === "pulse" && (
           <div className="animate-in fade-in duration-500">
-            <article>
-              <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900 px-6 py-20 text-white">
-                <div className="mx-auto max-w-3xl">
-                  <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-teal-300">
-                    <Newspaper className="h-3.5 w-3.5" /> pulseBhook · {PULSE_ARTICLE.date}
+            {(() => {
+              const article = PULSE_ARTICLES.find((item) => item.slug === pulseSlug);
+              if (!pulseSlug) {
+                return (
+                  <div className="bg-white">
+                    <div className="mx-auto max-w-5xl px-6 pb-24 pt-16 md:px-8 md:pt-24">
+                      <p className="text-sm font-semibold uppercase tracking-[0.22em] text-teal-600">pulseBhook</p>
+                      <h1 className="mt-4 max-w-3xl text-4xl font-bold tracking-tight text-slate-900 md:text-6xl">
+                        News, launches, and stories
+                      </h1>
+                      <p className="mt-4 max-w-2xl text-lg text-slate-500">Official notes from TourBhook.</p>
+                      <div className="mt-14 border-t border-slate-200">
+                        {PULSE_ARTICLES.map((item, index) => (
+                          <button
+                            key={item.slug}
+                            type="button"
+                            onClick={() => openPulse(item.slug)}
+                            className={`grid w-full gap-8 border-b border-slate-200 py-12 text-left md:items-center ${item.image ? "md:grid-cols-[minmax(0,1fr)_18rem]" : ""}`}
+                          >
+                            <div>
+                              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-600">{item.date}</div>
+                              <h2 className={`mt-3 font-bold tracking-tight text-slate-900 ${index === 0 ? "text-3xl md:text-5xl" : "text-2xl md:text-4xl"}`}>
+                                {item.title}
+                              </h2>
+                              <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 md:text-lg">
+                                {item.dek ?? item.sections[0]?.paragraphs[0]}
+                              </p>
+                              <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-900">
+                                Read story
+                                <ArrowRight className="h-4 w-4" />
+                              </span>
+                            </div>
+                            {item.image ? (
+                              <img
+                                src={item.image}
+                                alt={item.imageAlt}
+                                className="aspect-[4/3] w-full rounded-2xl object-cover"
+                              />
+                            ) : null}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                  <h1 className="text-4xl font-bold md:text-5xl">{PULSE_ARTICLE.title}</h1>
-                </div>
-              </div>
-              <div className="mx-auto max-w-3xl px-6 py-12">
-                <img
-                  src={PULSE_ARTICLE.image}
-                  alt={PULSE_ARTICLE.imageAlt}
-                  className="mb-10 w-full rounded-3xl object-cover"
-                />
-                {PULSE_ARTICLE.sections.map((section) => (
-                  <section key={section.heading} className="mb-10">
-                    <h2 className="mb-4 text-2xl font-bold text-slate-900">{section.heading}</h2>
-                    {section.paragraphs.map((paragraph) => (
-                      <p key={paragraph} className="mb-4 text-lg leading-relaxed text-slate-600">{paragraph}</p>
+                );
+              }
+              if (!article) {
+                return (
+                  <div className="mx-auto max-w-3xl px-6 py-20">
+                    <h1 className="mb-4 text-3xl font-bold text-slate-900">Story not found</h1>
+                    <button type="button" onClick={() => openPulse()} className="font-semibold text-teal-700">
+                      Back to pulseBhook
+                    </button>
+                  </div>
+                );
+              }
+              return (
+                <article>
+                  <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900 px-6 py-20 text-white">
+                    <div className="mx-auto max-w-3xl">
+                      <button
+                        type="button"
+                        onClick={() => openPulse()}
+                        className="mb-6 block text-left text-sm font-semibold text-teal-300"
+                      >
+                        pulseBhook
+                      </button>
+                      <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-teal-300">
+                        <Newspaper className="h-3.5 w-3.5" /> {article.date}
+                      </div>
+                      <h1 className="text-4xl font-bold md:text-5xl">{article.title}</h1>
+                      {article.dek ? <p className="mt-6 text-lg text-slate-300">{article.dek}</p> : null}
+                    </div>
+                  </div>
+                  <div className="mx-auto max-w-3xl px-6 py-12">
+                    {article.image ? (
+                      <img
+                        src={article.image}
+                        alt={article.imageAlt}
+                        className="mb-10 w-full rounded-3xl object-cover"
+                      />
+                    ) : null}
+                    {article.sections.map((section) => (
+                      <section key={section.heading || "lede"} className="mb-10">
+                        {section.heading ? (
+                          <h2 className="mb-4 text-2xl font-bold text-slate-900">{section.heading}</h2>
+                        ) : null}
+                        {section.paragraphs.map((paragraph) => (
+                          <p key={paragraph} className="mb-4 text-lg leading-relaxed text-slate-600">{paragraph}</p>
+                        ))}
+                        {section.website ? (
+                          <p className="text-lg text-slate-600">
+                            Website:{" "}
+                            <a href={section.website.href} className="font-semibold text-teal-700">
+                              {section.website.label}
+                            </a>
+                          </p>
+                        ) : null}
+                      </section>
                     ))}
-                  </section>
-                ))}
-              </div>
-            </article>
+                  </div>
+                </article>
+              );
+            })()}
           </div>
         )}
 
