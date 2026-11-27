@@ -27,7 +27,14 @@ function legalPagePaths() {
           req.url = `/privacy-policy/index.html${suffix}`;
         } else if (pathname === "/delete-account" || pathname === "/delete-account/") {
           req.url = `/delete-account/index.html${suffix}`;
-        } else if (pathname === "/faqs" || pathname === "/faqs/") {
+        } else if (
+          pathname === "/faqs" ||
+          pathname === "/faqs/" ||
+          pathname === "/pulsebhook" ||
+          pathname === "/pulsebhook/" ||
+          pathname === "/storybhook" ||
+          pathname === "/storybhook/"
+        ) {
           req.url = `/index.html${suffix}`;
         }
         next();

@@ -28,6 +28,7 @@ import {
   Rocket,
   Newspaper,
   ExternalLink,
+  BookOpen,
 } from "lucide-react";
 import { postForm, postJson } from "./api";
 
@@ -41,7 +42,9 @@ type Page =
   | "roadmap"
   | "press"
   | "ceo"
-  | "faqs";
+  | "faqs"
+  | "pulse"
+  | "story";
 
 const OFFICE_MAILTO = "mailto:info@tourbhook.com";
 
@@ -84,24 +87,105 @@ type Job = {
 
 const JOBS: Job[] = [];
 
+const PATH_PAGES: Partial<Record<Page, string>> = {
+  faqs: "/faqs",
+  pulse: "/pulsebhook",
+  story: "/storybhook",
+};
+
+const QUERY_PAGES: Page[] = [
+  "about",
+  "crewbhook",
+  "careers",
+  "partner",
+  "job-detail",
+  "roadmap",
+  "press",
+  "ceo",
+];
+
+function pageFromLocation(): Page {
+  if (typeof window === "undefined") return "home";
+  const path = window.location.pathname.replace(/\/$/, "") || "/";
+  const fromPath = (Object.entries(PATH_PAGES) as [Page, string][]).find(
+    ([, pathname]) => pathname === path,
+  );
+  if (fromPath) return fromPath[0];
+  const requested = new URLSearchParams(window.location.search).get("page");
+  return QUERY_PAGES.includes(requested as Page) ? (requested as Page) : "home";
+}
+
+function pathForPage(page: Page, section?: string) {
+  const pathname = PATH_PAGES[page];
+  if (pathname) return pathname;
+  if (page === "home") return section ? `/#${section}` : "/";
+  return section ? `/?page=${page}#${section}` : `/?page=${page}`;
+}
+
+const PULSE_POSTS = [
+  {
+    slug: "site-is-live",
+    kind: "Launch",
+    date: "9 November 2026",
+    title: "The TourBhook site is open",
+    excerpt:
+      "tourbhook.com now introduces the product, the waitlist, and a private line to the CEO's Office.",
+    body: "This is a sample launch note. TourBhook is the travel product. Pramahar Technologies is the company behind it. The public site is the place for official news until the app's own news feed is ready. Replace this copy with the announcement you want readers to keep.",
+  },
+  {
+    slug: "play-listing",
+    kind: "News",
+    date: "27 October 2026",
+    title: "TourBhook is listed on Google Play",
+    excerpt:
+      "The Android app is available to download. The iOS app is still on the way.",
+    body: "This is a sample news item. Use pulseBhook for store launches, version notes, and anything a journalist or a waitlist member should hear from the company rather than from a travel guide.",
+  },
+  {
+    slug: "how-to-cover-us",
+    kind: "Media",
+    date: "12 October 2026",
+    title: "A short note for editors",
+    excerpt:
+      "TourBhook plans the day after a trip is booked. It is not a flight or hotel checkout.",
+    body: "This is a sample media note. TourBhook builds route-aware itineraries: walking clusters, transit time, and opening hours. Booking sites still sell the tickets. Please keep TourBhook and Pramahar Technologies as separate names in headlines.",
+  },
+];
+
+const STORY_POSTS = [
+  {
+    slug: "ubud-without-backtracking",
+    place: "Ubud, Bali",
+    days: "1 day",
+    title: "A walking day in Ubud that stays in one valley",
+    excerpt:
+      "Rice terraces, a courtyard cafe, and a temple, in an order that does not cross town twice.",
+    body: "This is a sample guide. Morning starts at the terrace path while it is still cool. Late morning is a cafe inside that same walking cluster, not a restaurant back toward the main road. The temple visit sits before the return, so the day ends where the car is parked. Real stories can replace this with a full hour-by-hour itinerary.",
+  },
+  {
+    slug: "bangkok-one-neighbourhood",
+    place: "Bangkok",
+    days: "1 afternoon",
+    title: "One Bangkok neighbourhood, not five districts",
+    excerpt:
+      "A short afternoon built from places you can reach on foot between showers.",
+    body: "This is a sample itinerary. The plan stays inside one neighbourhood: a gallery, a shaded lane of shops, and dinner within a ten-minute walk. It is the kind of story storyBhook is for, once the real guides are ready.",
+  },
+  {
+    slug: "singapore-three-clusters",
+    place: "Singapore",
+    days: "2 days",
+    title: "Singapore in three walking clusters",
+    excerpt:
+      "Two days split by neighbourhood, with a cafe break written into each cluster.",
+    body: "This is a sample two-day guide. Day one is the civic district and the river, with the break chosen inside that walk. Day two moves to a different cluster instead of zig-zagging back. Swap this text for a published itinerary when you have one.",
+  },
+];
+
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<Page>(() => {
-    if (typeof window === "undefined") return "home";
-    const path = window.location.pathname.replace(/\/$/, "") || "/";
-    if (path === "/faqs") return "faqs";
-    const requested = new URLSearchParams(window.location.search).get("page");
-    const pages: Page[] = [
-      "about",
-      "crewbhook",
-      "careers",
-      "partner",
-      "job-detail",
-      "roadmap",
-      "press",
-      "ceo",
-    ];
-    return pages.includes(requested as Page) ? (requested as Page) : "home";
-  });
+  const [currentPage, setCurrentPage] = useState<Page>(pageFromLocation);
+  const [pulseSlug, setPulseSlug] = useState<string | null>(null);
+  const [storySlug, setStorySlug] = useState<string | null>(null);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [waitlistSubmitted, setWaitlistSubmitted] =
     useState(false);
@@ -140,27 +224,11 @@ export default function App() {
   const sectionTarget = useRef<string | null>(null);
 
   useEffect(() => {
-    const path = window.location.pathname.replace(/\/$/, "") || "/";
-    const requested = new URLSearchParams(window.location.search).get("page");
-    const pages: Page[] = [
-      "about",
-      "crewbhook",
-      "careers",
-      "partner",
-      "job-detail",
-      "roadmap",
-      "press",
-      "ceo",
-      "faqs",
-    ];
     const hash = window.location.hash.replace("#", "");
     if (hash) sectionTarget.current = hash;
-    if (path === "/faqs") {
-      setCurrentPage("faqs");
-      return;
-    }
-    if (requested && pages.includes(requested as Page) && requested !== "home") {
-      setCurrentPage(requested as Page);
+    const page = pageFromLocation();
+    if (page !== "home") {
+      setCurrentPage(page);
       return;
     }
     if (hash) {
@@ -174,16 +242,9 @@ export default function App() {
   const navigateTo = (page: Page, section?: string) => {
     sectionTarget.current = section ?? null;
     setMobileMenuOpen(false);
-    const nextUrl =
-      page === "faqs"
-        ? "/faqs"
-        : page === "home"
-          ? section
-            ? `/#${section}`
-            : "/"
-          : section
-            ? `/?page=${page}#${section}`
-            : `/?page=${page}`;
+    if (page === "pulse") setPulseSlug(null);
+    if (page === "story") setStorySlug(null);
+    const nextUrl = pathForPage(page, section);
     const here = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     if (here !== nextUrl) window.history.pushState({}, "", nextUrl);
     if (page === currentPage) {
@@ -218,26 +279,27 @@ export default function App() {
 
   useEffect(() => {
     const onPop = () => {
-      const path = window.location.pathname.replace(/\/$/, "") || "/";
-      if (path === "/faqs") {
-        setCurrentPage("faqs");
-        return;
-      }
-      const requested = new URLSearchParams(window.location.search).get("page");
-      const pages: Page[] = ["about", "crewbhook", "careers", "partner", "job-detail", "roadmap", "press", "ceo"];
-      setCurrentPage(requested && pages.includes(requested as Page) ? (requested as Page) : "home");
+      const page = pageFromLocation();
+      setCurrentPage(page);
+      if (page !== "pulse") setPulseSlug(null);
+      if (page !== "story") setStorySlug(null);
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
   useEffect(() => {
-    document.title = currentPage === "faqs" ? "FAQs | TourBhook by PRAMAHAR" : "TourBhook by PRAMAHAR";
+    const titles: Partial<Record<Page, string>> = {
+      faqs: "FAQs | TourBhook by PRAMAHAR",
+      pulse: "pulseBhook | TourBhook by PRAMAHAR",
+      story: "storyBhook | TourBhook by PRAMAHAR",
+    };
+    document.title = titles[currentPage] ?? "TourBhook by PRAMAHAR";
     const link = document.querySelector('link[rel="canonical"]');
     if (link) {
       link.setAttribute(
         "href",
-        currentPage === "faqs" ? "https://www.tourbhook.com/faqs" : "https://www.tourbhook.com/",
+        `https://www.tourbhook.com${PATH_PAGES[currentPage] ?? "/"}`,
       );
     }
   }, [currentPage]);
@@ -402,18 +464,23 @@ export default function App() {
 
           <div className="hidden items-center gap-x-5 text-sm font-medium text-slate-500 lg:flex">
             <button
-              onClick={() => navigateTo("home")}
-              className={`transition-colors hover:text-slate-900 ${currentPage === "home" ? "font-semibold text-slate-900" : ""}`}
-            >
-              Home
-            </button>
-            <button
               onClick={() => navigateTo("about")}
               className={`transition-colors hover:text-slate-900 ${currentPage === "about" ? "font-semibold text-slate-900" : ""}`}
             >
               About us
             </button>
-
+            <button
+              onClick={() => navigateTo("pulse")}
+              className={`transition-colors hover:text-slate-900 ${currentPage === "pulse" ? "font-semibold text-slate-900" : ""}`}
+            >
+              pulseBhook
+            </button>
+            <button
+              onClick={() => navigateTo("story")}
+              className={`transition-colors hover:text-slate-900 ${currentPage === "story" ? "font-semibold text-slate-900" : ""}`}
+            >
+              storyBhook
+            </button>
             <button
               onClick={() => navigateTo("crewbhook")}
               className={`transition-colors hover:text-slate-900 ${currentPage === "crewbhook" || currentPage === "careers" || currentPage === "job-detail" ? "font-semibold text-slate-900" : ""}`}
@@ -432,18 +499,6 @@ export default function App() {
             >
               CEO's Office
             </button>
-            <button
-              onClick={() => navigateTo("home", "contact")}
-              className="transition-colors hover:text-slate-900"
-            >
-              Contact
-            </button>
-            <button
-              onClick={() => navigateTo("home", "waitlist")}
-              className="rounded-full bg-gradient-to-r from-teal-600 to-teal-500 px-5 py-2 font-semibold text-white shadow-lg shadow-teal-500/20 transition-all hover:shadow-xl hover:shadow-teal-500/30"
-            >
-              Join Waitlist
-            </button>
           </div>
 
           <button
@@ -459,16 +514,22 @@ export default function App() {
           <div className="border-t border-slate-100 bg-white px-4 py-6 shadow-lg lg:hidden">
             <div className="flex flex-col space-y-4">
               <button
-                onClick={() => navigateTo("home")}
-                className={`text-left font-medium ${currentPage === "home" ? "text-teal-600" : "text-slate-600"}`}
-              >
-                Home
-              </button>
-              <button
                 onClick={() => navigateTo("about")}
                 className={`text-left font-medium ${currentPage === "about" ? "text-teal-600" : "text-slate-600"}`}
               >
                 About us
+              </button>
+              <button
+                onClick={() => navigateTo("pulse")}
+                className={`text-left font-medium ${currentPage === "pulse" ? "text-teal-600" : "text-slate-600"}`}
+              >
+                pulseBhook
+              </button>
+              <button
+                onClick={() => navigateTo("story")}
+                className={`text-left font-medium ${currentPage === "story" ? "text-teal-600" : "text-slate-600"}`}
+              >
+                storyBhook
               </button>
               <button
                 onClick={() => navigateTo("home", "services")}
@@ -489,22 +550,10 @@ export default function App() {
                 CEO's Office
               </button>
               <button
-                onClick={() => navigateTo("home", "contact")}
-                className="text-left font-medium text-slate-600"
-              >
-                Contact
-              </button>
-              <button
                 onClick={() => navigateTo("partner")}
                 className={`text-left font-medium ${currentPage === "partner" ? "text-teal-600" : "text-slate-600"}`}
               >
                 Partner
-              </button>
-              <button
-                onClick={() => navigateTo("home", "waitlist")}
-                className="rounded-full bg-gradient-to-r from-teal-600 to-teal-500 px-5 py-2 font-semibold text-white shadow-lg"
-              >
-                Join Waitlist
               </button>
             </div>
           </div>
@@ -3164,7 +3213,143 @@ export default function App() {
         )}
 
         {/* 404 Fallback */}
-        {!["home","about","crewbhook","careers","partner","job-detail","roadmap","press","ceo","faqs"].includes(currentPage) && (
+        {currentPage === "pulse" && (
+          <div className="animate-in fade-in duration-500">
+            <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900 px-6 py-20 text-white">
+              <div className="mx-auto max-w-3xl text-center">
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-teal-300">
+                  <Newspaper className="h-3.5 w-3.5" /> pulseBhook
+                </div>
+                <h1 className="mb-4 text-4xl font-bold md:text-6xl">News, launches, and media</h1>
+                <p className="text-lg text-slate-300">
+                  Official notes from TourBhook and Pramahar Technologies. The posts below are samples until the real announcements are ready.
+                </p>
+              </div>
+            </div>
+            <div className="mx-auto max-w-3xl px-6 py-16">
+              {(() => {
+                const post = PULSE_POSTS.find((item) => item.slug === pulseSlug);
+                if (!post) {
+                  return (
+                    <div className="space-y-4">
+                      {PULSE_POSTS.map((item) => (
+                        <button
+                          key={item.slug}
+                          type="button"
+                          onClick={() => {
+                            setPulseSlug(item.slug);
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }}
+                          className="block w-full rounded-3xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:border-teal-200"
+                        >
+                          <div className="mb-3 flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                            <span className="rounded-full bg-teal-50 px-2.5 py-1 text-teal-700">{item.kind}</span>
+                            <span>{item.date}</span>
+                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-500">Sample</span>
+                          </div>
+                          <h2 className="mb-2 text-2xl font-bold text-slate-900">{item.title}</h2>
+                          <p className="text-slate-500">{item.excerpt}</p>
+                        </button>
+                      ))}
+                    </div>
+                  );
+                }
+                return (
+                  <article className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => setPulseSlug(null)}
+                      className="mb-6 text-sm font-semibold text-teal-700 hover:text-teal-800"
+                    >
+                      All pulseBhook notes
+                    </button>
+                    <div className="mb-3 flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      <span className="rounded-full bg-teal-50 px-2.5 py-1 text-teal-700">{post.kind}</span>
+                      <span>{post.date}</span>
+                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-500">Sample</span>
+                    </div>
+                    <h2 className="mb-4 text-3xl font-bold text-slate-900">{post.title}</h2>
+                    <p className="leading-relaxed text-slate-600">{post.body}</p>
+                  </article>
+                );
+              })()}
+            </div>
+          </div>
+        )}
+
+        {currentPage === "story" && (
+          <div className="animate-in fade-in duration-500">
+            <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900 px-6 py-20 text-white">
+              <div className="mx-auto max-w-3xl text-center">
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-teal-300">
+                  <BookOpen className="h-3.5 w-3.5" /> storyBhook
+                </div>
+                <h1 className="mb-4 text-4xl font-bold md:text-6xl">Travel blogs, guides, and itineraries</h1>
+                <p className="text-lg text-slate-300">
+                  Stories about how a day should be ordered. These three are samples you can replace with real guides.
+                </p>
+              </div>
+            </div>
+            <div className="mx-auto max-w-3xl px-6 py-16">
+              {(() => {
+                const story = STORY_POSTS.find((item) => item.slug === storySlug);
+                if (!story) {
+                  return (
+                    <div className="space-y-4">
+                      {STORY_POSTS.map((item) => (
+                        <button
+                          key={item.slug}
+                          type="button"
+                          onClick={() => {
+                            setStorySlug(item.slug);
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }}
+                          className="block w-full rounded-3xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:border-teal-200"
+                        >
+                          <div className="mb-3 flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                            <span className="inline-flex items-center gap-1 text-teal-700">
+                              <MapPin className="h-3.5 w-3.5" /> {item.place}
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                              <Clock className="h-3.5 w-3.5" /> {item.days}
+                            </span>
+                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-500">Sample</span>
+                          </div>
+                          <h2 className="mb-2 text-2xl font-bold text-slate-900">{item.title}</h2>
+                          <p className="text-slate-500">{item.excerpt}</p>
+                        </button>
+                      ))}
+                    </div>
+                  );
+                }
+                return (
+                  <article className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => setStorySlug(null)}
+                      className="mb-6 text-sm font-semibold text-teal-700 hover:text-teal-800"
+                    >
+                      All storyBhook guides
+                    </button>
+                    <div className="mb-3 flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      <span className="inline-flex items-center gap-1 text-teal-700">
+                        <MapPin className="h-3.5 w-3.5" /> {story.place}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="h-3.5 w-3.5" /> {story.days}
+                      </span>
+                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-500">Sample</span>
+                    </div>
+                    <h2 className="mb-4 text-3xl font-bold text-slate-900">{story.title}</h2>
+                    <p className="leading-relaxed text-slate-600">{story.body}</p>
+                  </article>
+                );
+              })()}
+            </div>
+          </div>
+        )}
+
+        {!["home","about","crewbhook","careers","partner","job-detail","roadmap","press","ceo","faqs","pulse","story"].includes(currentPage) && (
           <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center animate-in fade-in duration-500">
             <div className="mb-6 text-7xl">🗺️</div>
             <h1 className="mb-3 text-4xl font-bold text-slate-900">Page not found</h1>
@@ -3214,6 +3399,22 @@ export default function App() {
                     className="hover:text-teal-600"
                   >
                     About Us
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigateTo("pulse")}
+                    className="hover:text-teal-600"
+                  >
+                    pulseBhook
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigateTo("story")}
+                    className="hover:text-teal-600"
+                  >
+                    storyBhook
                   </button>
                 </li>
                 <li>
