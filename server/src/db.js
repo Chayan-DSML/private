@@ -61,6 +61,7 @@ export async function migrate(pool) {
   await ensureWaitlistReferrals(pool);
   await ensureSeedPayments(pool);
   await ensurePulseReads(pool);
+  await ensureFeatureVotes(pool);
 }
 
 const PULSE_READ_START = {
@@ -77,6 +78,33 @@ async function ensurePulseReads(pool) {
     await pool.query(
       "INSERT IGNORE INTO pulse_reads (slug, read_count) VALUES (?, ?)",
       [slug, reads],
+    );
+  }
+}
+
+const FEATURE_VOTE_START = {
+  f1: 1243,
+  f2: 987,
+  f3: 876,
+  f4: 698,
+  f5: 445,
+};
+
+export function featureVoteIds() {
+  return FEATURE_VOTE_START;
+}
+
+async function ensureFeatureVotes(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS feature_votes (
+      feature_id VARCHAR(16) NOT NULL PRIMARY KEY,
+      votes INT NOT NULL
+    )
+  `);
+  for (const [featureId, votes] of Object.entries(FEATURE_VOTE_START)) {
+    await pool.query(
+      "INSERT IGNORE INTO feature_votes (feature_id, votes) VALUES (?, ?)",
+      [featureId, votes],
     );
   }
 }

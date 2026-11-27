@@ -418,7 +418,7 @@ export default function App() {
   const [partnerSubmitted, setPartnerSubmitted] = useState(false);
   const [partnerSlider, setPartnerSlider] = useState(20);
   const [referralCopied, setReferralCopied] = useState(false);
-  const [featureVotes, setFeatureVotes] = useState<Record<string, boolean>>({});
+  const [featureVotes, setFeatureVotes] = useState<Record<string, number>>({});
   const [wishlistSubmitted, setWishlistSubmitted] = useState(false);
   const [wishlistIdea, setWishlistIdea] = useState("");
   const [cookieDismissed, setCookieDismissed] = useState(false);
@@ -578,6 +578,20 @@ export default function App() {
       ignore = true;
     };
   }, [currentPage, seedSubmitted]);
+
+  useEffect(() => {
+    if (currentPage !== "roadmap") return;
+    let ignore = false;
+    fetch("/api/feature-votes")
+      .then((response) => response.json())
+      .then((data) => {
+        if (!ignore && data.votes) setFeatureVotes(data.votes);
+      })
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, [currentPage]);
 
   useEffect(() => {
     const onPop = () => {
@@ -3343,29 +3357,45 @@ export default function App() {
                   <div className="space-y-4">
                     <div className="mb-8 flex items-center justify-between">
                       <h2 className="text-xl font-bold text-slate-900">Top requested features</h2>
-                      <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">{Object.keys(featureVotes).length} voted</span>
+                      <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+                        {Object.values(featureVotes).reduce((sum, count) => sum + count, 0).toLocaleString("en-IN")} votes
+                      </span>
                     </div>
                     {features.map((f) => {
-                      const voted = featureVotes[f.id];
-                      const displayVotes = voted ? f.votes + 1 : f.votes;
+                      const votes = featureVotes[f.id] ?? f.votes;
+                      const top = Math.max(...features.map((item) => featureVotes[item.id] ?? item.votes), 1);
                       return (
-                        <div key={f.id} className={`group flex items-center gap-4 rounded-2xl border p-5 transition-all hover:shadow-md ${voted ? "border-teal-200 bg-teal-50" : "border-slate-100 bg-white"}`}>
-                          <span className="text-3xl">{f.emoji}</span>
-                          <div className="flex-1">
-                            <div className="font-semibold text-slate-900">{f.title}</div>
-                            <p className="mt-0.5 text-sm text-slate-500">{f.desc}</p>
+                        <div key={f.id} className="rounded-2xl border border-slate-100 bg-white p-5">
+                          <div className="flex items-center gap-4">
+                            <span className="text-3xl">{f.emoji}</span>
+                            <div className="flex-1">
+                              <div className="font-semibold text-slate-900">{f.title}</div>
+                              <p className="mt-0.5 text-sm text-slate-500">{f.desc}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                fetch(`/api/feature-votes/${f.id}`, { method: "POST" })
+                                  .then((response) => response.json())
+                                  .then((data) => {
+                                    if (Number.isFinite(Number(data.votes))) {
+                                      setFeatureVotes((current) => ({ ...current, [f.id]: Number(data.votes) }));
+                                    }
+                                  })
+                                  .catch(() => {});
+                              }}
+                              className="flex flex-shrink-0 flex-col items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 transition-all hover:border-teal-300 hover:text-teal-600"
+                            >
+                              <span className="text-base">▲</span>
+                              <span>{votes.toLocaleString("en-IN")}</span>
+                            </button>
                           </div>
-                          <button
-                            onClick={() => setFeatureVotes(prev => {
-                              const next = { ...prev };
-                              if (next[f.id]) { delete next[f.id]; } else { next[f.id] = true; }
-                              return next;
-                            })}
-                            className={`flex flex-shrink-0 flex-col items-center rounded-xl border px-4 py-2 text-sm font-bold transition-all ${voted ? "border-teal-400 bg-teal-500 text-white" : "border-slate-200 bg-white text-slate-600 hover:border-teal-300 hover:text-teal-600"}`}
-                          >
-                            <span className="text-base">{voted ? "▲" : "△"}</span>
-                            <span>{displayVotes.toLocaleString()}</span>
-                          </button>
+                          <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
+                            <div
+                              className="h-full rounded-full bg-[#00d2eb] transition-all duration-500"
+                              style={{ width: `${Math.max(6, Math.round((votes / top) * 100))}%` }}
+                            />
+                          </div>
                         </div>
                       );
                     })}

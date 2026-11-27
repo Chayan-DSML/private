@@ -351,6 +351,21 @@ test("opening a pulse story adds one read", async () => {
   assert.equal(missing.status, 404);
 });
 
+test("feature wishlist votes only increase", async () => {
+  const listed = await fetch(`${base}/api/feature-votes`);
+  assert.equal(listed.status, 200);
+  const before = (await listed.json()).votes.f5;
+  assert.ok(before >= 445);
+  const voted = await fetch(`${base}/api/feature-votes/f5`, { method: "POST" });
+  assert.equal(voted.status, 200);
+  const body = await voted.json();
+  assert.equal(body.votes, before + 1);
+  const again = await fetch(`${base}/api/feature-votes/f5`, { method: "POST" });
+  assert.equal((await again.json()).votes, before + 2);
+  const missing = await fetch(`${base}/api/feature-votes/nope`, { method: "POST" });
+  assert.equal(missing.status, 404);
+});
+
 test("invalid public payloads are rejected", async () => {
   const response = await fetch(`${base}/api/waitlist`, {
     method: "POST",

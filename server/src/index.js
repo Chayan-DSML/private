@@ -8,7 +8,7 @@ import dotenv from "dotenv";
 import express from "express";
 import multer from "multer";
 import { ensureAdmin, loginAdmin, requireAdmin } from "./auth.js";
-import { createPool, migrate, pulseReadSlugs, query } from "./db.js";
+import { createPool, featureVoteIds, migrate, pulseReadSlugs, query } from "./db.js";
 import { sendCeoOfficeNote } from "./ceoMail.js";
 import { deleteResume, isCloudResume, openResume, saveResume } from "./resumes.js";
 import { joinWaitlist, readLocation } from "./waitlist.js";
@@ -185,6 +185,39 @@ export function createApp(pool, uploadDir) {
       );
       scheduleSheetSync(pool);
       return res.status(joined.status).json(joined.body);
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.get("/api/feature-votes", async (_req, res, next) => {
+    try {
+      const rows = await query(pool, "SELECT feature_id, votes FROM feature_votes");
+      const votes = {};
+      for (const row of rows) votes[row.feature_id] = Number(row.votes) || 0;
+      res.json({ votes });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/feature-votes/:id", rateLimit(60, 60_000), async (req, res, next) => {
+    try {
+      const id = String(req.params.id || "");
+      if (!Object.hasOwn(featureVoteIds(), id)) {
+        return res.status(404).json({ error: "Feature not found" });
+      }
+      await query(
+        pool,
+        "UPDATE feature_votes SET votes = votes + 1 WHERE feature_id = ?",
+        [id],
+      );
+      const rows = await query(
+        pool,
+        "SELECT votes FROM feature_votes WHERE feature_id = ?",
+        [id],
+      );
+      return res.json({ id, votes: Number(rows[0]?.votes) || 0 });
     } catch (error) {
       return next(error);
     }
