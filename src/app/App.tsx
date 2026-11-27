@@ -123,68 +123,61 @@ function pathForPage(page: Page, section?: string) {
   return section ? `/?page=${page}#${section}` : `/?page=${page}`;
 }
 
-const PULSE_POSTS = [
-  {
-    slug: "site-is-live",
-    kind: "Launch",
-    date: "9 November 2026",
-    title: "The TourBhook site is open",
-    excerpt:
-      "tourbhook.com now introduces the product, the waitlist, and a private line to the CEO's Office.",
-    body: "This is a sample launch note. TourBhook is the travel product. Pramahar Technologies is the company behind it. The public site is the place for official news until the app's own news feed is ready. Replace this copy with the announcement you want readers to keep.",
-  },
-  {
-    slug: "play-listing",
-    kind: "News",
-    date: "27 October 2026",
-    title: "TourBhook is listed on Google Play",
-    excerpt:
-      "The Android app is available to download. The iOS app is still on the way.",
-    body: "This is a sample news item. Store launches and version notes belong on pulseBhook, next to the travel guides.",
-  },
-  {
-    slug: "how-to-cover-us",
-    kind: "Media",
-    date: "12 October 2026",
-    title: "A short note for editors",
-    excerpt:
-      "TourBhook plans the day after a trip is booked. It is not a flight or hotel checkout.",
-    body: "This is a sample media note. TourBhook builds route-aware itineraries: walking clusters, transit time, and opening hours. Booking sites still sell the tickets. Please keep TourBhook and Pramahar Technologies as separate names in headlines.",
-  },
-  {
-    slug: "ubud-without-backtracking",
-    kind: "Guide",
-    date: "18 November 2026",
-    place: "Ubud, Bali",
-    days: "1 day",
-    title: "A walking day in Ubud that stays in one valley",
-    excerpt:
-      "Rice terraces, a courtyard cafe, and a temple, in an order that does not cross town twice.",
-    body: "This is a sample guide. Morning starts at the terrace path while it is still cool. Late morning is a cafe inside that same walking cluster, not a restaurant back toward the main road. The temple visit sits before the return, so the day ends where the car is parked.",
-  },
-  {
-    slug: "bangkok-one-neighbourhood",
-    kind: "Itinerary",
-    date: "2 November 2026",
-    place: "Bangkok",
-    days: "1 afternoon",
-    title: "One Bangkok neighbourhood, not five districts",
-    excerpt:
-      "A short afternoon built from places you can reach on foot between showers.",
-    body: "This is a sample itinerary. The plan stays inside one neighbourhood: a gallery, a shaded lane of shops, and dinner within a ten-minute walk.",
-  },
-  {
-    slug: "singapore-three-clusters",
-    kind: "Guide",
-    date: "21 October 2026",
-    place: "Singapore",
-    days: "2 days",
-    title: "Singapore in three walking clusters",
-    excerpt:
-      "Two days split by neighbourhood, with a cafe break written into each cluster.",
-    body: "This is a sample two-day guide. Day one is the civic district and the river, with the break chosen inside that walk. Day two moves to a different cluster instead of zig-zagging back.",
-  },
-];
+const PULSE_ARTICLE = {
+  kind: "Editorial",
+  date: "November 2026",
+  title: "From a ₹5,000 Jaipur Trip to TourBhook: A Founder’s Vision for Simpler Budget Travel",
+  image: "/pulse/chayan-agarwal.jpg",
+  imageAlt: "Chayan Agarwal standing in front of the TourBhook sign",
+  sections: [
+    {
+      heading: "A trip that sparked an idea",
+      paragraphs: [
+        "In February 2025, a Jaipur trip planned around a ₹5,000 budget became the starting point for a bigger question: why does planning an affordable journey often require travellers to piece together information from so many different places?",
+        "For Chayan Agarwal, the experience highlighted the friction between finding a destination and making practical decisions about what a trip might actually cost. That gap inspired the idea for TourBhook, a travel-tech platform being developed to help people explore travel options with greater attention to their budgets and preferences.",
+        "The ambition is straightforward: make travel discovery and planning feel less fragmented, especially for people who want to travel thoughtfully without losing control of their spending.",
+      ],
+    },
+    {
+      heading: "Building the idea from the ground up",
+      paragraphs: [
+        "Chayan began working independently on the TourBhook concept in November 2025. Like many early-stage founders, he had to translate a personal experience into a product direction, consider which problems to tackle first, and balance a broader vision with the realities of launching an initial version.",
+        "TourBhook is a product developed under PRAMAHAR, its parent company. The consumer-facing identity, however, is TourBhook: the name through which the team hopes travellers will discover and engage with the platform.",
+        "The first release is intended to establish a practical foundation. Rather than claiming to solve every aspect of travel planning immediately, the team plans to develop more advanced capabilities over time, guided by user needs and feedback.",
+      ],
+    },
+    {
+      heading: "The people behind the journey",
+      paragraphs: [
+        "While Chayan Agarwal began building TourBhook independently in November 2025, he credits his partner, Harshita Jhunjhunwala, for playing an important role in shaping the journey.",
+        "Beyond providing emotional encouragement, Harshita actively contributed to refining the original concept, brainstorming product features, and exploring ways to make the platform more useful for travellers. Her consistent belief in Chayan's vision helped him navigate the uncertainties of building a startup from the ground up.",
+        "Chayan also acknowledges the encouragement and support of his parents, who stood by him throughout his entrepreneurial journey. Together, these contributions form an important part of the story behind the product, without changing the distinction between its founder and those who supported its development.",
+      ],
+    },
+    {
+      heading: "A budget-conscious approach to travel",
+      paragraphs: [
+        "Travel inspiration is easy to find online; turning inspiration into an actionable plan can be harder. Travellers may have to compare destinations, activities, local information, and costs across multiple sources before they can decide what suits them.",
+        "TourBhook aims to address that experience by putting budget awareness and personal preferences closer to the centre of travel planning. Its positioning is not that it already offers every advanced feature, but that it is being built around a clear user problem and a roadmap for improving the experience.",
+        "That distinction matters for an early-stage product: a credible launch story is as much about the problem being tackled as it is about the features available on day one.",
+      ],
+    },
+    {
+      heading: "Investment and growth plans",
+      paragraphs: [
+        "The TourBhook initiative began with ₹10 lakh in founder capital and has outlined a separate, additional ₹30 lakh planned investment for its next phase. Of that proposed allocation, ₹12 lakh is earmarked for product development, application improvements, and future features; the remaining ₹18 lakh is intended for brand building, growth marketing, and user acquisition.",
+        "These figures describe the stated investment plan, has already been received. The allocation reflects the team’s intention to develop the product while introducing the TourBhook brand to prospective users.",
+      ],
+    },
+    {
+      heading: "Looking ahead to launch",
+      paragraphs: [
+        "TourBhook is targeting an official launch on November 30, 2026. The initial version is expected to be relatively basic, with further enhancements planned as the team learns from how travellers use the platform.",
+        "For Chayan, the journey from a ₹5,000 Jaipur trip to a travel-tech product is rooted in a familiar challenge: making travel decisions that fit real budgets. Whether TourBhook can turn that insight into a useful everyday planning experience will be shaped by its execution, the feedback it receives, and the trust it builds with travellers.",
+      ],
+    },
+  ],
+};
 
 const SEED_MIN = 100;
 const SEED_MAX = 1_000_000;
@@ -242,7 +235,6 @@ function amountFromSlider(position: number) {
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>(pageFromLocation);
-  const [pulseSlug, setPulseSlug] = useState<string | null>(null);
   const incomingReferral = useRef(
     typeof window === "undefined"
       ? ""
@@ -317,7 +309,6 @@ export default function App() {
   const navigateTo = (page: Page, section?: string) => {
     sectionTarget.current = section ?? null;
     setMobileMenuOpen(false);
-    if (page === "pulse") setPulseSlug(null);
     const nextUrl = pathForPage(page, section);
     const here = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     if (here !== nextUrl) window.history.pushState({}, "", nextUrl);
@@ -369,7 +360,6 @@ export default function App() {
     const onPop = () => {
       const page = pageFromLocation();
       setCurrentPage(page);
-      if (page !== "pulse") setPulseSlug(null);
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
@@ -3392,75 +3382,31 @@ export default function App() {
         {/* 404 Fallback */}
         {currentPage === "pulse" && (
           <div className="animate-in fade-in duration-500">
-            <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900 px-6 py-20 text-white">
-              <div className="mx-auto max-w-3xl text-center">
-                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-teal-300">
-                  <Newspaper className="h-3.5 w-3.5" /> pulseBhook
+            <article>
+              <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900 px-6 py-20 text-white">
+                <div className="mx-auto max-w-3xl">
+                  <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-teal-300">
+                    <Newspaper className="h-3.5 w-3.5" /> pulseBhook · {PULSE_ARTICLE.date}
+                  </div>
+                  <h1 className="text-4xl font-bold md:text-5xl">{PULSE_ARTICLE.title}</h1>
                 </div>
-                <h1 className="mb-4 text-4xl font-bold md:text-6xl">News, guides, and launches</h1>
-                <p className="text-lg text-slate-300">
-                  Company news, media notes, and travel guides live here. The posts below are samples until the real copy is ready.
-                </p>
               </div>
-            </div>
-            <div className="mx-auto max-w-3xl px-6 py-16">
-              {(() => {
-                const post = PULSE_POSTS.find((item) => item.slug === pulseSlug);
-                if (!post) {
-                  return (
-                    <div className="space-y-4">
-                      {PULSE_POSTS.map((item) => (
-                        <button
-                          key={item.slug}
-                          type="button"
-                          onClick={() => {
-                            setPulseSlug(item.slug);
-                            window.scrollTo({ top: 0, behavior: "smooth" });
-                          }}
-                          className="block w-full rounded-3xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:border-teal-200"
-                        >
-                          <div className="mb-3 flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                            <span className="rounded-full bg-teal-50 px-2.5 py-1 text-teal-700">{item.kind}</span>
-                            <span>{item.date}</span>
-                            {"place" in item && item.place ? (
-                              <span className="inline-flex items-center gap-1">
-                                <MapPin className="h-3.5 w-3.5" /> {item.place}
-                              </span>
-                            ) : null}
-                            {"days" in item && item.days ? (
-                              <span className="inline-flex items-center gap-1">
-                                <Clock className="h-3.5 w-3.5" /> {item.days}
-                              </span>
-                            ) : null}
-                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-500">Sample</span>
-                          </div>
-                          <h2 className="mb-2 text-2xl font-bold text-slate-900">{item.title}</h2>
-                          <p className="text-slate-500">{item.excerpt}</p>
-                        </button>
-                      ))}
-                    </div>
-                  );
-                }
-                return (
-                  <article className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-                    <button
-                      type="button"
-                      onClick={() => setPulseSlug(null)}
-                      className="mb-6 text-sm font-semibold text-teal-700 hover:text-teal-800"
-                    >
-                      All pulseBhook notes
-                    </button>
-                    <div className="mb-3 flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                      <span className="rounded-full bg-teal-50 px-2.5 py-1 text-teal-700">{post.kind}</span>
-                      <span>{post.date}</span>
-                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-500">Sample</span>
-                    </div>
-                    <h2 className="mb-4 text-3xl font-bold text-slate-900">{post.title}</h2>
-                    <p className="leading-relaxed text-slate-600">{post.body}</p>
-                  </article>
-                );
-              })()}
-            </div>
+              <div className="mx-auto max-w-3xl px-6 py-12">
+                <img
+                  src={PULSE_ARTICLE.image}
+                  alt={PULSE_ARTICLE.imageAlt}
+                  className="mb-10 w-full rounded-3xl object-cover"
+                />
+                {PULSE_ARTICLE.sections.map((section) => (
+                  <section key={section.heading} className="mb-10">
+                    <h2 className="mb-4 text-2xl font-bold text-slate-900">{section.heading}</h2>
+                    {section.paragraphs.map((paragraph) => (
+                      <p key={paragraph} className="mb-4 text-lg leading-relaxed text-slate-600">{paragraph}</p>
+                    ))}
+                  </section>
+                ))}
+              </div>
+            </article>
           </div>
         )}
 
