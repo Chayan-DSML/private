@@ -3475,7 +3475,7 @@ export default function App() {
                 <p className="text-lg text-slate-300">
                   Fund TourBhook in the portion you choose, from {formatInr(SEED_MIN)} to {formatInr(SEED_MAX)}. Every contribution is non-refundable.
                 </p>
-                <SeedGrowth amount={seedAmount} light />
+                <SeedGrowth raised={seedRaised} goal={SEED_GOAL} light />
                 <div className="mx-auto mt-8 max-w-xl text-left">
                   <div className="mb-2 flex justify-between text-sm text-slate-300">
                     <span>{formatInr(seedRaised)} raised</span>
@@ -3496,7 +3496,7 @@ export default function App() {
                   {[
                     ["1", "Choose your portion", "From ₹100 up to ₹10,00,000."],
                     ["2", "Pay with Razorpay", "Payments are non-refundable."],
-                    ["3", "Watch it grow", "A larger portion grows the seed faster."],
+                    ["3", "Watch it grow", "It grows with the total received, until ₹1 crore."],
                   ].map(([step, title, body]) => (
                     <div key={step} className="rounded-2xl border border-slate-200 bg-white p-5">
                       <div className="mb-2 text-xs font-bold uppercase tracking-widest text-teal-600">Step {step}</div>
