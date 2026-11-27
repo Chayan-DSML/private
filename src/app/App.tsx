@@ -3510,13 +3510,17 @@ export default function App() {
               if (!pulseSlug) {
                 return (
                   <div className="bg-white">
-                    <div className="mx-auto max-w-5xl px-6 pb-24 pt-16 md:px-8 md:pt-24">
-                      <p className="text-sm font-semibold uppercase tracking-[0.22em] text-teal-600">pulseBhook</p>
-                      <h1 className="mt-4 max-w-3xl text-4xl font-bold tracking-tight text-slate-900 md:text-6xl">
-                        News, launches, and stories
-                      </h1>
-                      <p className="mt-4 max-w-2xl text-lg text-slate-500">Official notes from TourBhook.</p>
-                      <div className="mt-14 border-t border-slate-200">
+                    <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900 px-6 py-20 text-white">
+                      <div className="mx-auto max-w-5xl md:px-2">
+                        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-teal-300">
+                          <Newspaper className="h-3.5 w-3.5" /> pulseBhook
+                        </div>
+                        <h1 className="text-4xl font-bold md:text-5xl">News, launches, and stories</h1>
+                        <p className="mt-4 text-lg text-slate-300">Official notes from TourBhook.</p>
+                      </div>
+                    </div>
+                    <div className="mx-auto max-w-5xl px-6 pb-24 md:px-8">
+                      <div className="border-t border-slate-200">
                         {PULSE_ARTICLES.map((item, index) => (
                           <button
                             key={item.slug}
