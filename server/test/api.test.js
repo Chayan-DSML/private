@@ -262,7 +262,7 @@ test("job application stores the resume for an admin download", async () => {
   form.set("email", "avery@example.com");
   form.set("phone", "+91 90000 00000");
   form.set("experience", "5+ years");
-  form.set("whyJoin", "I would like to help build Tour Bhook.");
+  form.set("whyJoin", "I would like to help build TourBhook.");
   form.set("linkedinUrl", "https://linkedin.com/in/avery");
   form.set("githubUrl", "https://github.com/avery");
   form.set(
