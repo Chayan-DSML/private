@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import logoLight from "../imports/logo-light.png";
+import logoDark from "../imports/logo-dark.png";
 import {
   Menu,
+  Moon,
   Sparkles,
   Zap,
   MessageSquare,
@@ -24,6 +26,7 @@ import {
   Users,
   ArrowRight,
   Upload,
+  Sun,
   Building2,
   Copy,
   Check,
@@ -356,6 +359,12 @@ export default function App() {
       ? ""
       : (new URLSearchParams(window.location.search).get("ref") || "").trim().toLowerCase(),
   );
+  const [referralGateOpen, setReferralGateOpen] = useState(
+    () => incomingReferral.current.length > 0,
+  );
+  const [gateEmail, setGateEmail] = useState("");
+  const [gateError, setGateError] = useState("");
+  const [gatePending, setGatePending] = useState(false);
   const [referralOffer, setReferralOffer] = useState<{
     code: string;
     url: string;
@@ -391,6 +400,10 @@ export default function App() {
   const [wishlistSubmitted, setWishlistSubmitted] = useState(false);
   const [wishlistIdea, setWishlistIdea] = useState("");
   const [cookieDismissed, setCookieDismissed] = useState(false);
+  const [dark, setDark] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("tourbhook-theme") === "dark";
+  });
   const [waitlistError, setWaitlistError] = useState("");
   const [waitlistPending, setWaitlistPending] = useState(false);
   const [contactError, setContactError] = useState("");
@@ -406,6 +419,20 @@ export default function App() {
   const [ceoPending, setCeoPending] = useState(false);
 
   const sectionTarget = useRef<string | null>(null);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", dark);
+    localStorage.setItem("tourbhook-theme", dark ? "dark" : "light");
+  }, [dark]);
+
+  useEffect(() => {
+    if (!referralGateOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [referralGateOpen]);
 
   useEffect(() => {
     const hash = window.location.hash.replace("#", "");
@@ -557,6 +584,36 @@ export default function App() {
 
     return () => clearInterval(timer);
   }, []);
+
+  const submitReferralGate = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const email = gateEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setGateError("Enter a valid email address");
+      return;
+    }
+    setGateError("");
+    setGatePending(true);
+    try {
+      const data = await postJson("/api/waitlist", {
+        email,
+        referralCode: incomingReferral.current,
+      });
+      setReferralOffer({
+        code: data.referralCode,
+        url: data.referralUrl,
+        count: Number(data.referralCount) || 0,
+        referredByCode: data.referredByCode || null,
+        alreadyJoined: Boolean(data.alreadyJoined),
+      });
+      setWaitlistSubmitted(true);
+      setReferralGateOpen(false);
+    } catch (err) {
+      setGateError(err instanceof Error ? err.message : "Could not save that email");
+    } finally {
+      setGatePending(false);
+    }
+  };
 
   const handleWaitlistSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -757,7 +814,7 @@ export default function App() {
             className="group flex items-center gap-3 transition-opacity hover:opacity-90"
           >
             <img
-              src={logoLight}
+              src={dark ? logoDark : logoLight}
               alt="TourBhook"
               className="h-12 w-auto"
             />
@@ -807,6 +864,14 @@ export default function App() {
               className={`transition-colors hover:text-slate-900 ${currentPage === "ceo" ? "font-semibold text-slate-900" : ""}`}
             >
               CEO's Office
+            </button>
+            <button
+              type="button"
+              aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+              onClick={() => setDark((on) => !on)}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-700 transition hover:border-teal-500 hover:text-teal-600"
+            >
+              {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
           </div>
 
@@ -3813,7 +3878,7 @@ export default function App() {
                 className="group mb-4 flex items-center gap-2 transition-opacity hover:opacity-90"
               >
                 <img
-                  src={logoLight}
+                  src={dark ? logoDark : logoLight}
                   alt="TourBhook"
                   className="h-10 w-auto"
                 />
@@ -3971,9 +4036,53 @@ export default function App() {
         </div>
       </footer>
 
+      {/* Referral gate */}
+      {referralGateOpen && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+          <form
+            onSubmit={submitReferralGate}
+            className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl"
+            aria-modal="true"
+            role="dialog"
+            aria-labelledby="referral-gate-title"
+          >
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-teal-600">
+              Invited with {incomingReferral.current}
+            </p>
+            <h2 id="referral-gate-title" className="mb-2 text-2xl font-bold text-slate-900">
+              Enter your email to view TourBhook
+            </h2>
+            <p className="mb-6 text-sm text-slate-500">
+              This link was shared with you. Add your email, then the site opens.
+            </p>
+            <label className="mb-2 block text-sm font-semibold text-slate-700" htmlFor="referral-gate-email">
+              Email
+            </label>
+            <input
+              id="referral-gate-email"
+              type="email"
+              required
+              autoFocus
+              value={gateEmail}
+              onChange={(e) => setGateEmail(e.target.value)}
+              placeholder="you@email.com"
+              className="mb-4 w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 outline-none focus:border-teal-500"
+            />
+            {gateError ? <p className="mb-4 text-sm text-red-600">{gateError}</p> : null}
+            <button
+              type="submit"
+              disabled={gatePending}
+              className="w-full rounded-xl bg-slate-900 py-3 font-bold text-white transition hover:bg-slate-800 disabled:opacity-50"
+            >
+              {gatePending ? "Saving..." : "Submit"}
+            </button>
+          </form>
+        </div>
+      )}
+
       {/* Terms Modal */}
       {/* Cookie Consent Banner */}
-      {!cookieDismissed && (
+      {!cookieDismissed && !referralGateOpen && (
         <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white px-6 py-4 shadow-lg md:bottom-6 md:left-6 md:right-auto md:max-w-md md:rounded-2xl md:border md:shadow-xl">
           <p className="mb-3 text-sm text-slate-600">We use minimal cookies to keep the site working and understand how visitors interact with it. No ad tracking, ever.</p>
           <div className="flex items-center gap-3">
